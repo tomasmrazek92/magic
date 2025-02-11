@@ -1,45 +1,131 @@
-import { createSwiper } from '$utils/globalFunctions';
+import { initSwipers } from './utils/globalFunctions';
 
-// ----- SWIPERS
-if ($('.company_content').length) {
-  createSwiper('.company_content', '.company_slider', 'company-swiper', {
-    slidesPerView: 2,
-    spaceBetween: 16,
-  });
-}
-
-if ($('.career_component').length) {
-  createSwiper('.career_component', '.career_slider', 'career-swiper', {
-    slidesPerView: 1.25,
-    spaceBetween: 16,
-    breakpoints: {
-      // when window width is >= 480px
-      479: {
-        slidesPerView: 2,
-        spaceBetween: 24,
+// Sample data for swiperInstances, specific to this page
+const swiperInstances = [
+  [
+    '.section_hp-inspired',
+    '.swiper-inspired',
+    'inspired-slider',
+    {
+      slidesPerView: 'auto',
+    },
+    'all',
+  ],
+  [
+    '.section_lp-official-carousel',
+    '.lp-official-carousel_slider',
+    'lp-official',
+    {
+      slidesPerView: 1,
+      loop: true,
+      threshhold: 30,
+      spaceBetween: 24,
+    },
+    'all',
+  ],
+  [
+    '.section_hp-reviews',
+    '.swiper-reviews',
+    'reviews-slider',
+    {
+      slidesPerView: 'auto',
+      autoHeight: true,
+    },
+    'all',
+  ],
+  [
+    '.section_windows-styles',
+    '.swiper-styles',
+    'styles-slider',
+    {
+      breakpoints: {
+        0: {
+          centeredSlides: true,
+          spaceBetween: 20,
+          slidesPerView: 1.5,
+        },
+        767: {
+          centeredSlides: true,
+          spaceBetween: 28,
+          slidesPerView: 2.4,
+        },
+        992: {
+          centeredSlides: false,
+          spaceBetween: 20,
+          slidesPerView: 4,
+        },
       },
     },
-  });
-}
-
-if ($('.stories_component').length) {
-  const slideLength = $('.stories_slider .swiper-slide').length;
-  if (slideLength === 0) {
-    $('.stories_component').closest('.section').hide();
-  } else if (slideLength === 1) {
-    $('.stories_slider .swiper-slide').css('max-width', '54rem');
-    $('.stories_component .arrows-group').hide();
-  } else {
-    createSwiper('.stories_component', '.stories_slider-cms', 'stories-swiper', {
+    'all',
+  ],
+  [
+    '.section_windows-energy',
+    '.swiper-energy',
+    'energy-slider',
+    {
+      pagination: {
+        el: '.section_windows-energy .slider-progress_bg',
+        type: 'progressbar',
+      },
+      breakpoints: {
+        0: {
+          centeredSlides: true,
+          spaceBetween: 24,
+          slidesPerView: 1.5,
+        },
+        767: {
+          centeredSlides: true,
+          spaceBetween: 28,
+          slidesPerView: 2,
+        },
+        992: {
+          spaceBetween: 48,
+          centeredSlides: false,
+          slidesPerView: 'auto',
+        },
+      },
+    },
+    'all',
+  ],
+  [
+    '.section_windows-control',
+    '.swiper-control',
+    'control-slider',
+    {
+      loop: true,
+      speed: 1000,
+      centeredSlides: true,
+      autoplay: { delay: 3000 },
+      breakpoints: {
+        0: {
+          spaceBetween: 24,
+          slidesPerView: 1.4,
+        },
+        767: {
+          spaceBetween: 32,
+          slidesPerView: 2,
+        },
+        992: {
+          spaceBetween: 16,
+          slidesPerView: 'auto',
+        },
+      },
+    },
+    'all',
+  ],
+  [
+    '.section_styles-hero',
+    '.swiper-tabs',
+    'tabs-slider',
+    {
       slidesPerView: 'auto',
-      spaceBetween: 16,
-    });
-  }
-}
+      loop: true,
+      threshhold: 20,
+      slideToClickedSlide: true,
+    },
+    'all',
+  ],
+];
 
-if ($('.platform-prev_component').length) {
-  createSwiper('.platform-prev_component', '.platform-prev_slider', 'platprevs-swiper', {
-    slidesPerView: 'auto',
-    spaceBetween: 0,
-  });
-}
+// Initialize swipers with instances specific to this page
+initSwipers(swiperInstances);

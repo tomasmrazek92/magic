@@ -7,7 +7,14 @@ const BUILD_DIRECTORY = 'dist';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 
 // Config entrypoint files
-const ENTRY_POINTS = ['src/homepage.js', 'src/menu.js', 'src/swipers.js', 'src/legalNav.js'];
+const ENTRY_POINTS = [
+  'src/swipers.js',
+  'src/styles.js',
+  'src/plyr-video.js',
+  'src/gallery.js',
+  'src/careers.js',
+  'src/index.js',
+];
 
 // Config dev serving
 const LIVE_RELOAD = !PRODUCTION;
