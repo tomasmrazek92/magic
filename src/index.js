@@ -3,7 +3,7 @@ $(document).ready(() => {
   const scrollHeight = $(navbar).height();
 
   window.onscroll = () => {
-    if (navbar.length) {
+    if (navbar.length && $(window).width() < 992) {
       if (window.scrollY > scrollHeight / 2) {
         if (!navbar.hasClass('fixed')) {
           navbar.addClass('fixed');

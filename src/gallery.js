@@ -10,12 +10,12 @@ window.fsAttributes.push([
       let entries = filterInstance.filtersData[0].values.size;
       if (entries >= 1) {
         // If filters are active, execute this block
-        $('.p-gallery_cms-wrap').hide();
-        $('.p-gallery_detail-wrap').css('display', 'flex');
+        $('[data-filter-default]').hide();
+        $('[data-filter-results]').css('display', 'flex');
       } else {
         // If no filters are active, execute this block
-        $('.p-gallery_cms-wrap').show();
-        $('.p-gallery_detail-wrap').hide();
+        $('[data-filter-default]').show();
+        $('[data-filter-results]').hide();
       }
     });
   },
