@@ -12,7 +12,7 @@ export const createResponsiveSwiper = (
   mode
 ) => {
   // Step 2: Fetch elements by their componentSelector; if none, exit the function
-  let elements = $(componentSelector);
+  let elements = $(swiperSelector);
   if (elements.length === 0) return;
 
   // Reset the uniqueIdCounters for this classSelector to 0

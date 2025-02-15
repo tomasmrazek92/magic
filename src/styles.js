@@ -20,10 +20,22 @@ function updateColorType(index) {
 function initColorPicker() {
   let pickerList = $('.styles_hero-color_list');
   let pickerItem = $('.styles_hero-color_item');
+  let circle = '.styles_hero-color_item-inner';
+  let label = '.styles_hero-color_item-label';
+
+  $(circle).eq(0).addClass('is-active');
 
   pickerList.find(pickerItem).on('click', function () {
     let index = $(this).index();
 
+    // Active Class
+    pickerItem.find(circle).removeClass('is-active');
+    pickerItem.eq(index).find(circle).addClass('is-active');
+
+    // Label
+    $(label).filter('.cc-top').find('p').text($(this).find(label).text());
+
+    // Visuaů
     currentColor = index;
     currentVisual.find('img').hide();
     currentVisual.find('img').eq(currentColor).fadeIn();
@@ -54,6 +66,11 @@ const swiperInstances = [
     'all',
   ],
 ];
+
+// Fallback for no slider configuration
+if (!$('.section_styles-hero .swiper-tabs').length) {
+  initColorPicker();
+}
 
 // Initialize swipers with instances specific to this page
 initSwipers(swiperInstances);
