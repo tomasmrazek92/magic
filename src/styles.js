@@ -69,6 +69,7 @@ const swiperInstances = [
 
 // Fallback for no slider configuration
 if (!$('.section_styles-hero .swiper-tabs').length) {
+  updateColorType(0);
   initColorPicker();
 }
 

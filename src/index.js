@@ -1,5 +1,6 @@
 $(document).ready(() => {
   const navbar = $('.navbar');
+  const banner = $('.cta_banner');
   const scrollHeight = $(navbar).height();
 
   window.onscroll = () => {
@@ -11,6 +12,20 @@ $(document).ready(() => {
       } else {
         if (navbar.hasClass('fixed')) {
           navbar.removeClass('fixed');
+        }
+      }
+    }
+  };
+
+  window.onscroll = () => {
+    if (banner.length) {
+      if (window.scrollY > scrollHeight * 2) {
+        if (!banner.hasClass('active')) {
+          banner.addClass('active');
+        }
+      } else {
+        if (banner.hasClass('active')) {
+          banner.removeClass('active');
         }
       }
     }
