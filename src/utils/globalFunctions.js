@@ -13,7 +13,7 @@ export const createResponsiveSwiper = (
 ) => {
   // Step 2: Fetch elements by their componentSelector; if none, exit the function
   let elements = $(componentSelector).add(swiperSelector);
-  console.log(elements);
+  console.log(elements.length);
   if (elements.length !== 2) return;
 
   // Reset the uniqueIdCounters for this classSelector to 0
@@ -122,6 +122,7 @@ const manageSwiperInstance = (
     }
 
     const swiperElement = $(`${swiperSelector}.${uniqueKey}`)[0];
+    if (!swiperElement) return;
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && (shouldInitDesktop || shouldInitMobile || shouldInitAll)) {

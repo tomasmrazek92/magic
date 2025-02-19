@@ -2,9 +2,15 @@ import { initSwipers } from './utils/globalFunctions';
 
 let currentVisual;
 let currentColor = 0;
+let noColor = !$('.styles_hero-color_list').length;
+let noSwiper = !$('.section_styles-hero .swiper-tabs').length;
 
 function updateColorType(index) {
   let pickerVisuals = $('.styles_hero-visual');
+
+  if (noColor) {
+    pickerVisuals = pickerVisuals.find('img');
+  }
 
   // Reset
   pickerVisuals.hide();
@@ -68,7 +74,8 @@ const swiperInstances = [
 ];
 
 // Fallback for no slider configuration
-if (!$('.section_styles-hero .swiper-tabs').length) {
+if (noSwiper) {
+  noSwiper = true;
   updateColorType(0);
   initColorPicker();
 }
