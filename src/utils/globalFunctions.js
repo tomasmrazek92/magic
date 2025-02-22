@@ -74,6 +74,22 @@ const getMergedSwiperOptions = (options, uniqueKey) => {
       nextEl: `.swiper-arrow.next.${uniqueKey}`,
     },
     pagination: paginationConfig,
+    on: {
+      init: function () {
+        // Delay the refresh slightly to ensure Swiper has finished DOM updates
+        setTimeout(() => {
+          ScrollTrigger.refresh();
+        }, 100);
+      },
+
+      slideChange: function () {
+        ScrollTrigger.refresh();
+      },
+
+      resize: function () {
+        ScrollTrigger.refresh();
+      },
+    },
     ...options,
   };
 };

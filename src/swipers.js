@@ -71,7 +71,7 @@ const swiperInstances = [
         0: {
           centeredSlides: true,
           spaceBetween: 24,
-          slidesPerView: 1.5,
+          slidesPerView: 1.1,
         },
         767: {
           centeredSlides: true,
@@ -119,6 +119,18 @@ const swiperInstances = [
     'tabs-slider',
     {
       slidesPerView: 'auto',
+      loop: true,
+      threshhold: 20,
+      slideToClickedSlide: true,
+    },
+    'all',
+  ],
+  [
+    '.section_blog-hero',
+    '.blog-hero_slider',
+    'blog-slider',
+    {
+      slidesPerView: 1,
       loop: true,
       threshhold: 20,
       slideToClickedSlide: true,

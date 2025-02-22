@@ -56,3 +56,54 @@ $('.p-gallery_menu-link').on('click', function () {
   searchInput.val(text);
   searchInput[0].dispatchEvent(new Event('input', { bubbles: true }));
 });
+
+// Animated Placeholder
+function typingPlaceholder($input, words, options = {}) {
+  const defaults = {
+    typeSpeed: 100,
+    wordDelay: 2000,
+    eraseSpeed: 50,
+  };
+
+  const settings = { ...defaults, ...options };
+  let wordIndex = 0;
+  let charIndex = 0;
+  let isDeleting = false;
+
+  function type() {
+    const currentWord = words[wordIndex];
+
+    if (isDeleting) {
+      // Erasing
+      $input.attr('placeholder', currentWord.substring(0, charIndex));
+      charIndex--;
+
+      if (charIndex < 0) {
+        isDeleting = false;
+        wordIndex = (wordIndex + 1) % words.length;
+        // Immediately start typing the next word
+        setTimeout(type, settings.typeSpeed);
+        return;
+      }
+
+      setTimeout(type, settings.eraseSpeed);
+    } else {
+      // Typing
+      $input.attr('placeholder', currentWord.substring(0, charIndex));
+      charIndex++;
+
+      if (charIndex > currentWord.length) {
+        isDeleting = true;
+        // Only apply word delay when word is complete
+        setTimeout(type, settings.wordDelay);
+        return;
+      }
+
+      setTimeout(type, settings.typeSpeed);
+    }
+  }
+
+  type();
+}
+
+typingPlaceholder(searchInput, searchWords);
