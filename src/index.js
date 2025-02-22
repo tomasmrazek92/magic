@@ -187,7 +187,13 @@ $(document).ready(() => {
       return timings;
     }
 
-    video.pause();
+    // KEY CHANGE 1: Make sure video is muted before any other operations
+    video.muted = true;
+    video.playsInline = true; // Add playsinline for iOS
+    video.setAttribute('playsinline', ''); // Double ensure playsinline
+
+    // KEY CHANGE 2: Remove pause to prevent mobile autoplay issues
+    // video.pause(); // Removed this line
 
     function initScrollTrigger() {
       gsap.registerPlugin(ScrollTrigger);
@@ -199,76 +205,68 @@ $(document).ready(() => {
       // Force the first frame on page load
       gsap.set(video, { visibility: 'visible' });
 
+      // KEY CHANGE 3: Add markers for debugging on mobile
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: settings.containerSelector,
           start: 'top top',
           end: 'bottom bottom',
           scrub: settings.scrubSpeed,
+          markers: true, // Add markers to debug on mobile
           onEnter: () => {
-            if (video.readyState >= 2) {
-              video.currentTime = 0;
-            }
+            // KEY CHANGE 4: Simplified video time setting
+            video.currentTime = 0;
           },
           onUpdate: (self) => {
-            if (video.readyState >= 2) {
-              const { progress } = self;
-              const videoTime = progress * video.duration;
+            // KEY CHANGE 5: Simplified time update logic
+            const videoTime = self.progress * video.duration;
+            video.currentTime = videoTime;
 
-              if (Math.abs(video.currentTime - videoTime) > 0.01) {
-                video.currentTime = videoTime;
-              }
+            labelTimings.forEach((timing) => {
+              const fadeSize = settings.fadeOverlap;
+              const duration = timing.end - timing.start;
+              const fadeDuration = Math.min(fadeSize * duration, duration / 3);
 
-              labelTimings.forEach((timing) => {
-                const fadeSize = settings.fadeOverlap;
-                const duration = timing.end - timing.start;
-                const fadeDuration = Math.min(fadeSize * duration, duration / 3);
+              let opacity = 0;
 
-                let opacity = 0;
-
-                if (progress >= timing.start && progress <= timing.end) {
-                  if (progress < timing.start + fadeDuration) {
-                    opacity = (progress - timing.start) / fadeDuration;
-                  } else if (progress > timing.end - fadeDuration) {
-                    opacity = (timing.end - progress) / fadeDuration;
-                  } else {
-                    opacity = 1;
-                  }
-
-                  opacity = Math.max(0, Math.min(1, opacity));
+              if (self.progress >= timing.start && self.progress <= timing.end) {
+                if (self.progress < timing.start + fadeDuration) {
+                  opacity = (self.progress - timing.start) / fadeDuration;
+                } else if (self.progress > timing.end - fadeDuration) {
+                  opacity = (timing.end - self.progress) / fadeDuration;
+                } else {
+                  opacity = 1;
                 }
 
-                timing.element.css('opacity', opacity);
-              });
-            }
+                opacity = Math.max(0, Math.min(1, opacity));
+              }
+
+              timing.element.css('opacity', opacity);
+            });
           },
           onLeave: () => {
-            if (video.readyState >= 2) {
-              video.currentTime = video.duration - 0.001; // Set to just before the end
-            }
+            video.currentTime = video.duration;
           },
           onEnterBack: () => {
-            if (video.readyState >= 2) {
-              video.currentTime = video.duration;
-            }
+            video.currentTime = video.duration;
           },
         },
       });
     }
 
+    // KEY CHANGE 6: Simplified video loading check
     if (video.readyState >= 2) {
       initScrollTrigger();
     } else {
       video.addEventListener('loadeddata', initScrollTrigger, { once: true });
     }
 
-    video.muted = true;
-    video.preload = 'auto';
+    // KEY CHANGE 7: Remove preload setting to let browser decide
+    // video.preload = 'auto'; // Removed this line
 
+    // KEY CHANGE 8: Simplified play prevention
     video.addEventListener('play', function (e) {
-      if (!ScrollTrigger.isScrolling()) {
-        video.pause();
-      }
+      video.pause();
     });
   }
 
@@ -279,9 +277,9 @@ $(document).ready(() => {
       { start: 34, end: 62 }, // 3:07 - 4:96
       { start: 62, end: 66 }, // 4:96 - 6:00
       { start: 66, end: 75 }, // 6:00 - 6:50
-      { start: 75, end: 77 }, // 6:50 - 7:00
-      { start: 77, end: 88 }, // 7:00 - 8:00
-      { start: 88, end: 100 }, // 8:00 - 9:04
+      { start: 75, end: 85 }, // 6:50 - 7:00
+      { start: 85, end: 90 }, // 7:00 - 8:00
+      { start: 90, end: 100 }, // 8:00 - 9:04
     ],
   });
 
