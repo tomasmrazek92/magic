@@ -208,40 +208,69 @@ $(document).ready(() => {
     }
 
     function ensureVideoReady(video, callback) {
-      // Ensure preload and visibility
+      alert('🔍 Checking video readiness...');
+
       video.setAttribute('preload', 'auto');
       video.style.visibility = 'visible';
 
-      // Check if video is already ready
-      if (video.readyState >= 3) {
-        console.log('Video already ready.');
-        callback();
-        return;
-      }
+      let isReady = false; // Flag to prevent multiple callbacks
 
-      // Event listeners for readiness
       const handleReady = () => {
-        console.log('Video is ready!');
+        if (isReady) return; // Ensure it runs only once
+        isReady = true;
+        alert('🎬 Video is ready! Firing callback...');
         video.removeEventListener('loadeddata', handleReady);
         video.removeEventListener('canplaythrough', handleReady);
         callback();
       };
 
-      video.addEventListener('loadeddata', handleReady, { once: true });
-      video.addEventListener('canplaythrough', handleReady, { once: true });
+      alert(`✅ Initial readyState: ${video.readyState}`);
 
-      // Final fallback after 3 seconds
-      setTimeout(() => {
-        if (video.readyState >= 2) {
-          console.warn('Fallback triggered: Video readyState:', video.readyState);
+      // Immediate check
+      if (video.readyState >= 3) {
+        alert('🚀 Video already ready (readyState >= 3).');
+        handleReady();
+        return;
+      }
+
+      // Event listeners
+      video.addEventListener(
+        'loadeddata',
+        () => {
+          alert('📥 loadeddata event fired.');
           handleReady();
-        } else {
-          console.error('Video still not ready after fallback!');
+        },
+        { once: true }
+      );
+
+      video.addEventListener(
+        'canplaythrough',
+        () => {
+          alert('🔄 canplaythrough event fired.');
+          handleReady();
+        },
+        { once: true }
+      );
+
+      video.addEventListener('error', (e) => {
+        alert('❌ Video error:', e);
+      });
+
+      // Fallback timer
+      setTimeout(() => {
+        if (!isReady && video.readyState >= 2) {
+          alert('⏳ Fallback triggered. Current readyState:', video.readyState);
+          handleReady();
+        } else if (!isReady) {
+          alert('⚠️ Video still not ready after fallback!');
         }
       }, 3000);
     }
 
-    ensureVideoReady(video, initScrollTrigger);
+    ensureVideoReady(video, () => {
+      alert('🏗️ Initializing ScrollTrigger...');
+      initScrollTrigger();
+    });
   }
 
   initVideoScroll({
