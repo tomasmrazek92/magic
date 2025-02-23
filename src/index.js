@@ -209,6 +209,7 @@ $(document).ready(() => {
     function ensureVideoReady(video, callback) {
       console.log('🔍 Checking video readiness...');
 
+      // Ensure correct attributes for mobile
       video.setAttribute('preload', 'auto');
       video.setAttribute('playsinline', '');
       video.muted = true;
@@ -220,33 +221,35 @@ $(document).ready(() => {
         if (isReady) return;
         isReady = true;
         console.log('🎬 Video is ready! Firing callback...');
+        video.pause(); // Ensure video remains paused
         callback();
       };
 
-      // Force video load
+      // Force video load without playback
       video.load();
 
-      // Check readyState immediately
+      // Initial readiness check
       console.log(`✅ Initial readyState: ${video.readyState}`);
       if (video.readyState >= 3) {
         handleReady();
         return;
       }
 
-      // Event listeners
+      // Event listeners for readiness
       video.addEventListener('loadeddata', handleReady, { once: true });
       video.addEventListener('canplaythrough', handleReady, { once: true });
+
       video.addEventListener('error', (e) => {
         console.error('❌ Video error:', e);
       });
 
-      // Force play to trigger loading (it'll auto-pause)
-      video.play().catch(() => {
-        console.warn('⚠️ Autoplay blocked. Attempting manual load...');
-        video.load();
+      // Ensure paused state if autoplay happens
+      video.addEventListener('play', () => {
+        console.warn('🚫 Video started unexpectedly. Pausing...');
+        video.pause();
       });
 
-      // Fallback timer with retry logic
+      // Fallback retry every 1.5 seconds
       let retryCount = 0;
       const retryInterval = setInterval(() => {
         console.warn(`⏳ Retry ${++retryCount}: readyState ${video.readyState}`);
@@ -260,7 +263,7 @@ $(document).ready(() => {
         }
       }, 1500);
 
-      // Final fallback
+      // Final fallback after 7 seconds
       setTimeout(() => {
         if (!isReady && video.readyState >= 2) {
           console.warn('⚠️ Final fallback triggered.');
