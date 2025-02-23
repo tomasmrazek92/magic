@@ -5,6 +5,9 @@ window.fsAttributes.push([
     // The callback passes a `filterInstances` array with all the `CMSFilters` instances on the page.
     const [filterInstance] = filterInstances;
 
+    // Init
+    $('.search_clear').hide();
+
     // The `renderitems` event runs whenever the list renders items after filtering.
     filterInstance.listInstance.on('renderitems', function () {
       let entries = filterInstance.filtersData[0].values.size;
@@ -12,10 +15,12 @@ window.fsAttributes.push([
         // If filters are active, execute this block
         $('[data-filter-default]').hide();
         $('[data-filter-results]').css('display', 'flex');
+        $('.search_clear').show();
       } else {
         // If no filters are active, execute this block
         $('[data-filter-default]').show();
         $('[data-filter-results]').hide();
+        $('.search_clear').hide();
       }
     });
   },

@@ -129,8 +129,8 @@ $(document).ready(() => {
   // #region videoScroll
   function initVideoScroll(config = {}) {
     const defaults = {
-      videoSelector: '.window-scroll-wall_video video',
       containerSelector: '.section_window-scroll-wall',
+      videoSelector: '.window-scroll-wall_video video',
       labelSelector: '.window-scroll-wall_label',
       labels: [],
       scrubSpeed: 0.5,
@@ -139,7 +139,8 @@ $(document).ready(() => {
 
     const settings = { ...defaults, ...config };
     const $video = $(settings.videoSelector);
-    if (!$video.length) return;
+    const $videoContainer = $(settings.containerSelector);
+    if (!$videoContainer.length) return;
     const video = $video[0];
     const labels = $(settings.labelSelector);
     const totalLabels = labels.length;
@@ -168,7 +169,6 @@ $(document).ready(() => {
       gsap.registerPlugin(ScrollTrigger);
 
       const labelTimings = getLabelTimings();
-      gsap.set(labels, { opacity: 0 });
 
       let lastTime = -1;
 
@@ -280,6 +280,10 @@ $(document).ready(() => {
       }, 7000);
     }
 
+    // Hide Labels
+    gsap.set(labels, { opacity: 0 });
+
+    // Video play
     ensureVideoReady(video, () => {
       // console.log('🏗️ Initializing ScrollTrigger...');
       initScrollTrigger();
@@ -287,6 +291,7 @@ $(document).ready(() => {
   }
 
   initVideoScroll({
+    containerSelector: '.section_window-scroll-wall',
     labels: [
       { start: 0, end: 22 }, // 0:00 - 2:00
       { start: 22, end: 34 }, // 2:00 - 3:07
@@ -294,8 +299,31 @@ $(document).ready(() => {
       { start: 62, end: 66 }, // 4:96 - 6:00
       { start: 66, end: 75 }, // 6:00 - 6:50
       { start: 75, end: 85 }, // 6:50 - 7:00
-      { start: 80, end: 90 }, // 7:00 - 8:00
+      { start: 85, end: 90 }, // 7:00 - 8:00
       { start: 90, end: 100 }, // 8:00 - 9:04
+    ],
+  });
+
+  initVideoScroll({
+    containerSelector: '.section_windowwall-scroll-wall',
+    labels: [
+      { start: 0, end: 20 }, // 0:00 - 1:50
+      { start: 58, end: 75 }, // 1:50 - 2:65
+      { start: 75, end: 85 }, // 2:65 - 3:80
+      { start: 85, end: 100 }, // 3:80 - 4:80
+    ],
+  });
+
+  initVideoScroll({
+    containerSelector: '.section_patiodoors-scroll-wall',
+    labels: [
+      { start: 0, end: 14 }, // 0:00 - 1:00
+      { start: 14, end: 29 }, // 1:00 - 2:00
+      { start: 29, end: 62 }, // 2:00 - 3:20
+      { start: 62, end: 71 }, // 3:20 - 5:00
+      { start: 62, end: 71 }, // 3:20 - 5:00 (duplicate)
+      { start: 71, end: 86 }, // 5:00 - 6:00
+      { start: 86, end: 100 }, // 6:00 - 7:00
     ],
   });
 

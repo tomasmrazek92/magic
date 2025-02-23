@@ -67,6 +67,29 @@ const getMergedSwiperOptions = (options, uniqueKey) => {
     ? { ...defaultPagination, ...options.pagination }
     : defaultPagination;
 
+  // Handle event merging
+  const existingEvents = options.on || {};
+  const enhancedEvents = {
+    ...existingEvents,
+    init: function (...args) {
+      // Call existing init if it exists
+      if (existingEvents.init) {
+        existingEvents.init.apply(this, args);
+      }
+      // Add ScrollTrigger refresh
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 100);
+    },
+    resize: function (...args) {
+      // Call existing resize if it exists
+      if (existingEvents.resize) {
+        existingEvents.resize.apply(this, args);
+      }
+      ScrollTrigger.refresh();
+    },
+  };
+
   return {
     speed: 1000,
     navigation: {
@@ -74,23 +97,8 @@ const getMergedSwiperOptions = (options, uniqueKey) => {
       nextEl: `.swiper-arrow.next.${uniqueKey}`,
     },
     pagination: paginationConfig,
-    on: {
-      init: function () {
-        // Delay the refresh slightly to ensure Swiper has finished DOM updates
-        setTimeout(() => {
-          ScrollTrigger.refresh();
-        }, 100);
-      },
-
-      slideChange: function () {
-        ScrollTrigger.refresh();
-      },
-
-      resize: function () {
-        ScrollTrigger.refresh();
-      },
-    },
     ...options,
+    on: enhancedEvents, // Override the 'on' property after spreading options
   };
 };
 
@@ -111,7 +119,7 @@ const manageSwiperInstance = (
   let existingInstance = swipers[classSelector][uniqueKey];
   let existingSwiper = existingInstance.swiperInstance;
 
-  // Determine under what conditions the Swiper should be initialized
+  // Determine under what conditions the Swiper should be initialized for desktop and mobile
   let shouldInitDesktop = mode === 'desktop' && window.matchMedia('(min-width: 992px)').matches;
   let shouldInitMobile =
     mode === 'mobile' && window.matchMedia('(min-width: 0px) and (max-width: 991px)').matches;
@@ -126,28 +134,40 @@ const manageSwiperInstance = (
     }
   };
 
-  // Initialize function
-  const initSwiper = () => {
+  // Reinitialize function
+  const reInitObserver = () => {
     const swiperElement = $(`${swiperSelector}.${uniqueKey}`)[0];
     if (!swiperElement) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (shouldInitDesktop || shouldInitMobile || shouldInitAll) {
+          if (!existingSwiper) {
+            let swiper = new Swiper(`${swiperSelector}.${uniqueKey}`, swiperOptions);
+            swipers[classSelector][uniqueKey] = {
+              swiperInstance: swiper,
+              mode: shouldInitDesktop ? 'desktop' : shouldInitMobile ? 'mobile' : 'all',
+              initialized: true,
+            };
+            observer.disconnect();
+            console.log('Swiper initialized for', swiperSelector, 'with uniqueKey', uniqueKey);
+          }
+        }
+      });
+    }, {});
 
-    if (!existingSwiper && (shouldInitDesktop || shouldInitMobile || shouldInitAll)) {
-      let swiper = new Swiper(`${swiperSelector}.${uniqueKey}`, swiperOptions);
-      swipers[classSelector][uniqueKey] = {
-        swiperInstance: swiper,
-        mode: shouldInitDesktop ? 'desktop' : shouldInitMobile ? 'mobile' : 'all',
-        initialized: true,
-      };
-      console.log('Swiper initialized for', swiperSelector, 'with uniqueKey', uniqueKey);
-    }
+    // Store the observer instance
+    swipers[classSelector][uniqueKey].observer = observer;
+
+    // Observe the element
+    observer.observe(swiperElement);
   };
 
-  // Check the conditions and either destroy or initialize
+  // Check the conditions and either destroy or reinitialize
   if (!shouldInitDesktop && mode === 'desktop') destroySwiper();
   else if (!shouldInitMobile && mode === 'mobile') destroySwiper();
   else if (!shouldInitAll && mode === 'all') destroySwiper();
   else if ((shouldInitDesktop || shouldInitMobile || shouldInitAll) && !existingSwiper) {
-    initSwiper();
+    reInitObserver();
   }
 };
 

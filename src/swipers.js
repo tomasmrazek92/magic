@@ -38,6 +38,7 @@ const swiperInstances = [
     '.swiper-styles',
     'styles-slider',
     {
+      threshold: 50,
       breakpoints: {
         0: {
           centeredSlides: true,
@@ -110,18 +111,6 @@ const swiperInstances = [
           slidesPerView: 'auto',
         },
       },
-    },
-    'all',
-  ],
-  [
-    '.section_styles-hero',
-    '.swiper-tabs',
-    'tabs-slider',
-    {
-      slidesPerView: 'auto',
-      loop: true,
-      threshhold: 20,
-      slideToClickedSlide: true,
     },
     'all',
   ],
