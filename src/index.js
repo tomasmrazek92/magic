@@ -166,8 +166,11 @@ $(document).ready(() => {
 
     function initScrollTrigger() {
       gsap.registerPlugin(ScrollTrigger);
+
       const labelTimings = getLabelTimings();
       gsap.set(labels, { opacity: 0 });
+
+      let lastTime = -1;
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -175,39 +178,44 @@ $(document).ready(() => {
           start: 'top top',
           end: 'bottom bottom',
           scrub: settings.scrubSpeed,
-          markers: true,
-          onEnter: () => (video.currentTime = 0),
           onUpdate: (self) => {
-            video.currentTime = self.progress * video.duration;
-            labelTimings.forEach(({ element, start, end }) => {
-              const fadeSize = settings.fadeOverlap;
-              const fadeDuration = Math.min(fadeSize * (end - start), (end - start) / 3);
-              let opacity = 0;
+            const videoTime = self.progress * video.duration;
 
-              if (self.progress >= start && self.progress <= end) {
-                if (self.progress < start + fadeDuration) {
-                  opacity = (self.progress - start) / fadeDuration;
-                } else if (self.progress > end - fadeDuration) {
-                  opacity = (end - self.progress) / fadeDuration;
+            // Throttle updates to avoid lag
+            if (Math.abs(videoTime - lastTime) > 0.1) {
+              requestAnimationFrame(() => {
+                video.currentTime = videoTime;
+              });
+              lastTime = videoTime;
+            }
+
+            // Handle label opacity
+            labelTimings.forEach((timing) => {
+              const fadeSize = settings.fadeOverlap;
+              const duration = timing.end - timing.start;
+              const fadeDuration = Math.min(fadeSize * duration, duration / 3);
+
+              let opacity = 0;
+              if (self.progress >= timing.start && self.progress <= timing.end) {
+                if (self.progress < timing.start + fadeDuration) {
+                  opacity = (self.progress - timing.start) / fadeDuration;
+                } else if (self.progress > timing.end - fadeDuration) {
+                  opacity = (timing.end - self.progress) / fadeDuration;
                 } else {
                   opacity = 1;
                 }
               }
-
-              element.css('opacity', Math.max(0, Math.min(1, opacity)));
+              timing.element.css('opacity', Math.max(0, Math.min(1, opacity)));
             });
           },
+          onEnter: () => (video.currentTime = 0),
           onLeave: () => (video.currentTime = video.duration),
-          onEnterBack: () => (video.currentTime = 0),
+          onEnterBack: () => (video.currentTime = video.duration),
         },
       });
-
-      // Refresh ScrollTrigger on mobile orientation change
-      window.addEventListener('orientationchange', () => ScrollTrigger.refresh());
-      window.addEventListener('resize', () => ScrollTrigger.refresh());
     }
     function ensureVideoReady(video, callback) {
-      console.log('🔍 Checking video readiness...');
+      // console.log('🔍 Checking video readiness...');
 
       // Ensure correct attributes for mobile
       video.setAttribute('preload', 'auto');
@@ -220,7 +228,7 @@ $(document).ready(() => {
       const handleReady = () => {
         if (isReady) return;
         isReady = true;
-        console.log('🎬 Video is ready! Firing callback...');
+        // console.log('🎬 Video is ready! Firing callback...');
         video.pause(); // Ensure video remains paused
         callback();
       };
@@ -229,7 +237,7 @@ $(document).ready(() => {
       video.load();
 
       // Initial readiness check
-      console.log(`✅ Initial readyState: ${video.readyState}`);
+      // console.log(`✅ Initial readyState: ${video.readyState}`);
       if (video.readyState >= 3) {
         handleReady();
         return;
@@ -240,40 +248,40 @@ $(document).ready(() => {
       video.addEventListener('canplaythrough', handleReady, { once: true });
 
       video.addEventListener('error', (e) => {
-        console.error('❌ Video error:', e);
+        // console.error('❌ Video error:', e);
       });
 
       // Ensure paused state if autoplay happens
       video.addEventListener('play', () => {
-        console.warn('🚫 Video started unexpectedly. Pausing...');
+        // console.warn('🚫 Video started unexpectedly. Pausing...');
         video.pause();
       });
 
       // Fallback retry every 1.5 seconds
       let retryCount = 0;
       const retryInterval = setInterval(() => {
-        console.warn(`⏳ Retry ${++retryCount}: readyState ${video.readyState}`);
+        // console.warn(`⏳ Retry ${++retryCount}: readyState ${video.readyState}`);
         if (video.readyState >= 3) {
           clearInterval(retryInterval);
           handleReady();
         }
         if (retryCount >= 5) {
           clearInterval(retryInterval);
-          console.error('🚫 Max retries reached. Video still not ready.');
+          // console.error('🚫 Max retries reached. Video still not ready.');
         }
       }, 1500);
 
       // Final fallback after 7 seconds
       setTimeout(() => {
         if (!isReady && video.readyState >= 2) {
-          console.warn('⚠️ Final fallback triggered.');
+          // console.warn('⚠️ Final fallback triggered.');
           handleReady();
         }
       }, 7000);
     }
 
     ensureVideoReady(video, () => {
-      console.log('🏗️ Initializing ScrollTrigger...');
+      // console.log('🏗️ Initializing ScrollTrigger...');
       initScrollTrigger();
     });
   }
