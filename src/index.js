@@ -162,7 +162,6 @@ $(document).ready(() => {
     video.muted = true;
     video.playsInline = true;
     video.setAttribute('playsinline', '');
-    video.setAttribute('autoplay', ''); // Ensure autoplay for mobile
     video.style.visibility = 'visible';
 
     function initScrollTrigger() {
@@ -208,15 +207,25 @@ $(document).ready(() => {
       window.addEventListener('resize', () => ScrollTrigger.refresh());
     }
 
-    // Ensure video is ready before ScrollTrigger
-    if (video.readyState >= 2) {
-      initScrollTrigger();
-    } else {
-      video.addEventListener('loadeddata', initScrollTrigger, { once: true });
+    // Ensure video is ready before initializing ScrollTrigger
+    function ensureVideoReady(video, callback) {
+      if (video.readyState >= 3) {
+        // ReadyState 3 = "canplay", more reliable for mobile
+        callback();
+      } else {
+        video.addEventListener('canplaythrough', callback, { once: true });
+
+        // Fallback in case event doesn't fire (common on iOS)
+        setTimeout(() => {
+          if (video.readyState >= 2) {
+            console.warn('Fallback triggered: Video readyState:', video.readyState);
+            callback();
+          }
+        }, 3000); // 3 seconds fallback
+      }
     }
 
-    // Prevent autoplay issues on mobile
-    video.addEventListener('play', () => video.pause());
+    ensureVideoReady(video, initScrollTrigger);
   }
 
   initVideoScroll({
