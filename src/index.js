@@ -206,69 +206,71 @@ $(document).ready(() => {
       window.addEventListener('orientationchange', () => ScrollTrigger.refresh());
       window.addEventListener('resize', () => ScrollTrigger.refresh());
     }
-
     function ensureVideoReady(video, callback) {
-      alert('🔍 Checking video readiness...');
+      console.log('🔍 Checking video readiness...');
 
       video.setAttribute('preload', 'auto');
+      video.setAttribute('playsinline', '');
+      video.muted = true;
       video.style.visibility = 'visible';
 
-      let isReady = false; // Flag to prevent multiple callbacks
+      let isReady = false;
 
       const handleReady = () => {
-        if (isReady) return; // Ensure it runs only once
+        if (isReady) return;
         isReady = true;
-        alert('🎬 Video is ready! Firing callback...');
-        video.removeEventListener('loadeddata', handleReady);
-        video.removeEventListener('canplaythrough', handleReady);
+        console.log('🎬 Video is ready! Firing callback...');
         callback();
       };
 
-      alert(`✅ Initial readyState: ${video.readyState}`);
+      // Force video load
+      video.load();
 
-      // Immediate check
+      // Check readyState immediately
+      console.log(`✅ Initial readyState: ${video.readyState}`);
       if (video.readyState >= 3) {
-        alert('🚀 Video already ready (readyState >= 3).');
         handleReady();
         return;
       }
 
       // Event listeners
-      video.addEventListener(
-        'loadeddata',
-        () => {
-          alert('📥 loadeddata event fired.');
-          handleReady();
-        },
-        { once: true }
-      );
-
-      video.addEventListener(
-        'canplaythrough',
-        () => {
-          alert('🔄 canplaythrough event fired.');
-          handleReady();
-        },
-        { once: true }
-      );
-
+      video.addEventListener('loadeddata', handleReady, { once: true });
+      video.addEventListener('canplaythrough', handleReady, { once: true });
       video.addEventListener('error', (e) => {
-        alert('❌ Video error:', e);
+        console.error('❌ Video error:', e);
       });
 
-      // Fallback timer
+      // Force play to trigger loading (it'll auto-pause)
+      video.play().catch(() => {
+        console.warn('⚠️ Autoplay blocked. Attempting manual load...');
+        video.load();
+      });
+
+      // Fallback timer with retry logic
+      let retryCount = 0;
+      const retryInterval = setInterval(() => {
+        console.warn(`⏳ Retry ${++retryCount}: readyState ${video.readyState}`);
+        if (video.readyState >= 3) {
+          clearInterval(retryInterval);
+          handleReady();
+        }
+        if (retryCount >= 5) {
+          clearInterval(retryInterval);
+          console.error('🚫 Max retries reached. Video still not ready.');
+        }
+      }, 1500);
+
+      // Final fallback
       setTimeout(() => {
         if (!isReady && video.readyState >= 2) {
-          alert('⏳ Fallback triggered. Current readyState:', video.readyState);
+          console.warn('⚠️ Final fallback triggered.');
           handleReady();
-        } else if (!isReady) {
-          alert('⚠️ Video still not ready after fallback!');
         }
-      }, 3000);
+      }, 7000);
     }
 
     ensureVideoReady(video, () => {
-      alert('🏗️ Initializing ScrollTrigger...');
+      console.log('🏗️ Initializing ScrollTrigger...');
       initScrollTrigger();
     });
   }
