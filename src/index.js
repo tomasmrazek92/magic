@@ -132,142 +132,91 @@ $(document).ready(() => {
       videoSelector: '.window-scroll-wall_video video',
       containerSelector: '.section_window-scroll-wall',
       labelSelector: '.window-scroll-wall_label',
-      labels: [], // Array of {start: number, end: number} for custom timing
+      labels: [],
       scrubSpeed: 0.5,
       fadeOverlap: 0.1,
     };
 
-    // Merge defaults with provided config
     const settings = { ...defaults, ...config };
-    // Get jQuery object
     const $video = $(settings.videoSelector);
-
-    // Check if video exists using jQuery length
     if (!$video.length) return;
-
-    // If you need the vanilla JS element later, you can get it like this:
     const video = $video[0];
-
     const labels = $(settings.labelSelector);
     const totalLabels = labels.length;
 
     function getLabelTimings() {
-      const timings = [];
-
-      labels.each(function (index) {
-        const $label = $(this);
-
-        // Check if we have custom timing for this index
-        const customTiming = settings.labels[index];
-
-        if (
-          customTiming &&
-          typeof customTiming.start === 'number' &&
-          typeof customTiming.end === 'number' &&
-          customTiming.start >= 0 &&
-          customTiming.end <= 100 &&
-          customTiming.start < customTiming.end
-        ) {
-          timings.push({
-            element: $label,
-            start: customTiming.start / 100,
-            end: customTiming.end / 100,
-          });
-        } else {
-          // Fallback to equal distribution
+      return labels
+        .map((index, label) => {
+          const customTiming = settings.labels[index];
           const segmentSize = 1 / totalLabels;
-          timings.push({
-            element: $label,
-            start: index * segmentSize,
-            end: (index + 1) * segmentSize,
-          });
-        }
-      });
-
-      return timings;
+          return {
+            element: $(label),
+            start: customTiming?.start / 100 ?? index * segmentSize,
+            end: customTiming?.end / 100 ?? (index + 1) * segmentSize,
+          };
+        })
+        .get();
     }
 
-    // KEY CHANGE 1: Make sure video is muted before any other operations
+    // Ensure autoplay and visibility on mobile
     video.muted = true;
-    video.playsInline = true; // Add playsinline for iOS
-    video.setAttribute('playsinline', ''); // Double ensure playsinline
-
-    // KEY CHANGE 2: Remove pause to prevent mobile autoplay issues
-    // video.pause(); // Removed this line
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('autoplay', ''); // Ensure autoplay for mobile
+    video.style.visibility = 'visible';
 
     function initScrollTrigger() {
       gsap.registerPlugin(ScrollTrigger);
-
       const labelTimings = getLabelTimings();
-
       gsap.set(labels, { opacity: 0 });
 
-      // Force the first frame on page load
-      gsap.set(video, { visibility: 'visible' });
-
-      // KEY CHANGE 3: Add markers for debugging on mobile
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: settings.containerSelector,
           start: 'top top',
           end: 'bottom bottom',
           scrub: settings.scrubSpeed,
-          markers: true, // Add markers to debug on mobile
-          onEnter: () => {
-            // KEY CHANGE 4: Simplified video time setting
-            video.currentTime = 0;
-          },
+          markers: true,
+          onEnter: () => (video.currentTime = 0),
           onUpdate: (self) => {
-            // KEY CHANGE 5: Simplified time update logic
-            const videoTime = self.progress * video.duration;
-            video.currentTime = videoTime;
-
-            labelTimings.forEach((timing) => {
+            video.currentTime = self.progress * video.duration;
+            labelTimings.forEach(({ element, start, end }) => {
               const fadeSize = settings.fadeOverlap;
-              const duration = timing.end - timing.start;
-              const fadeDuration = Math.min(fadeSize * duration, duration / 3);
-
+              const fadeDuration = Math.min(fadeSize * (end - start), (end - start) / 3);
               let opacity = 0;
 
-              if (self.progress >= timing.start && self.progress <= timing.end) {
-                if (self.progress < timing.start + fadeDuration) {
-                  opacity = (self.progress - timing.start) / fadeDuration;
-                } else if (self.progress > timing.end - fadeDuration) {
-                  opacity = (timing.end - self.progress) / fadeDuration;
+              if (self.progress >= start && self.progress <= end) {
+                if (self.progress < start + fadeDuration) {
+                  opacity = (self.progress - start) / fadeDuration;
+                } else if (self.progress > end - fadeDuration) {
+                  opacity = (end - self.progress) / fadeDuration;
                 } else {
                   opacity = 1;
                 }
-
-                opacity = Math.max(0, Math.min(1, opacity));
               }
 
-              timing.element.css('opacity', opacity);
+              element.css('opacity', Math.max(0, Math.min(1, opacity)));
             });
           },
-          onLeave: () => {
-            video.currentTime = video.duration;
-          },
-          onEnterBack: () => {
-            video.currentTime = video.duration;
-          },
+          onLeave: () => (video.currentTime = video.duration),
+          onEnterBack: () => (video.currentTime = 0),
         },
       });
+
+      // Refresh ScrollTrigger on mobile orientation change
+      window.addEventListener('orientationchange', () => ScrollTrigger.refresh());
+      window.addEventListener('resize', () => ScrollTrigger.refresh());
     }
 
-    // KEY CHANGE 6: Simplified video loading check
+    // Ensure video is ready before ScrollTrigger
     if (video.readyState >= 2) {
       initScrollTrigger();
     } else {
       video.addEventListener('loadeddata', initScrollTrigger, { once: true });
     }
 
-    // KEY CHANGE 7: Remove preload setting to let browser decide
-    // video.preload = 'auto'; // Removed this line
-
-    // KEY CHANGE 8: Simplified play prevention
-    video.addEventListener('play', function (e) {
-      video.pause();
-    });
+    // Prevent autoplay issues on mobile
+    video.addEventListener('play', () => video.pause());
   }
 
   initVideoScroll({
@@ -278,7 +227,7 @@ $(document).ready(() => {
       { start: 62, end: 66 }, // 4:96 - 6:00
       { start: 66, end: 75 }, // 6:00 - 6:50
       { start: 75, end: 85 }, // 6:50 - 7:00
-      { start: 85, end: 90 }, // 7:00 - 8:00
+      { start: 80, end: 90 }, // 7:00 - 8:00
       { start: 90, end: 100 }, // 8:00 - 9:04
     ],
   });
