@@ -111,7 +111,7 @@ const manageSwiperInstance = (
   let existingInstance = swipers[classSelector][uniqueKey];
   let existingSwiper = existingInstance.swiperInstance;
 
-  // Determine under what conditions the Swiper should be initialized for desktop and mobile
+  // Determine under what conditions the Swiper should be initialized
   let shouldInitDesktop = mode === 'desktop' && window.matchMedia('(min-width: 992px)').matches;
   let shouldInitMobile =
     mode === 'mobile' && window.matchMedia('(min-width: 0px) and (max-width: 991px)').matches;
@@ -119,10 +119,6 @@ const manageSwiperInstance = (
 
   // Destroy function
   const destroySwiper = () => {
-    if (existingInstance.observer) {
-      existingInstance.observer.disconnect();
-      delete existingInstance.observer;
-    }
     if (existingSwiper) {
       existingSwiper.destroy(true, true);
       delete swipers[classSelector][uniqueKey];
@@ -130,45 +126,28 @@ const manageSwiperInstance = (
     }
   };
 
-  // Reinitialize function
-  const reInitObserver = () => {
-    // Disconnect any existing observers
-    if (existingInstance.observer) {
-      existingInstance.observer.disconnect();
-    }
-
+  // Initialize function
+  const initSwiper = () => {
     const swiperElement = $(`${swiperSelector}.${uniqueKey}`)[0];
     if (!swiperElement) return;
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && (shouldInitDesktop || shouldInitMobile || shouldInitAll)) {
-          if (!existingSwiper) {
-            let swiper = new Swiper(`${swiperSelector}.${uniqueKey}`, swiperOptions);
-            swipers[classSelector][uniqueKey] = {
-              swiperInstance: swiper,
-              mode: shouldInitDesktop ? 'desktop' : shouldInitMobile ? 'mobile' : 'all',
-              initialized: true,
-            };
-            observer.disconnect();
-            console.log('Swiper initialized for', swiperSelector, 'with uniqueKey', uniqueKey);
-          }
-        }
-      });
-    }, {});
 
-    // Store the observer instance
-    swipers[classSelector][uniqueKey].observer = observer;
-
-    // Observe the element
-    observer.observe(swiperElement);
+    if (!existingSwiper && (shouldInitDesktop || shouldInitMobile || shouldInitAll)) {
+      let swiper = new Swiper(`${swiperSelector}.${uniqueKey}`, swiperOptions);
+      swipers[classSelector][uniqueKey] = {
+        swiperInstance: swiper,
+        mode: shouldInitDesktop ? 'desktop' : shouldInitMobile ? 'mobile' : 'all',
+        initialized: true,
+      };
+      console.log('Swiper initialized for', swiperSelector, 'with uniqueKey', uniqueKey);
+    }
   };
 
-  // Check the conditions and either destroy or reinitialize
+  // Check the conditions and either destroy or initialize
   if (!shouldInitDesktop && mode === 'desktop') destroySwiper();
   else if (!shouldInitMobile && mode === 'mobile') destroySwiper();
   else if (!shouldInitAll && mode === 'all') destroySwiper();
   else if ((shouldInitDesktop || shouldInitMobile || shouldInitAll) && !existingSwiper) {
-    reInitObserver();
+    initSwiper();
   }
 };
 
