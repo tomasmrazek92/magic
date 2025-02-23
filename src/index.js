@@ -207,22 +207,38 @@ $(document).ready(() => {
       window.addEventListener('resize', () => ScrollTrigger.refresh());
     }
 
-    // Ensure video is ready before initializing ScrollTrigger
     function ensureVideoReady(video, callback) {
-      if (video.readyState >= 3) {
-        // ReadyState 3 = "canplay", more reliable for mobile
-        callback();
-      } else {
-        video.addEventListener('canplaythrough', callback, { once: true });
+      // Ensure preload and visibility
+      video.setAttribute('preload', 'auto');
+      video.style.visibility = 'visible';
 
-        // Fallback in case event doesn't fire (common on iOS)
-        setTimeout(() => {
-          if (video.readyState >= 2) {
-            console.warn('Fallback triggered: Video readyState:', video.readyState);
-            callback();
-          }
-        }, 3000); // 3 seconds fallback
+      // Check if video is already ready
+      if (video.readyState >= 3) {
+        console.log('Video already ready.');
+        callback();
+        return;
       }
+
+      // Event listeners for readiness
+      const handleReady = () => {
+        console.log('Video is ready!');
+        video.removeEventListener('loadeddata', handleReady);
+        video.removeEventListener('canplaythrough', handleReady);
+        callback();
+      };
+
+      video.addEventListener('loadeddata', handleReady, { once: true });
+      video.addEventListener('canplaythrough', handleReady, { once: true });
+
+      // Final fallback after 3 seconds
+      setTimeout(() => {
+        if (video.readyState >= 2) {
+          console.warn('Fallback triggered: Video readyState:', video.readyState);
+          handleReady();
+        } else {
+          console.error('Video still not ready after fallback!');
+        }
+      }, 3000);
     }
 
     ensureVideoReady(video, initScrollTrigger);
