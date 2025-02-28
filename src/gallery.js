@@ -28,39 +28,43 @@ window.fsAttributes.push([
 
 let searchInput = $('.search_input');
 
-// Create a function to monitor input changes
-function monitorSearchInput() {
-  searchInput.on('input', function () {
-    let currentValue = $(this).val().toLowerCase().trim();
+if (!window.location.href.includes('/blog-categories/')) {
+  // Create a function to monitor input changes
+  function monitorSearchInput() {
+    searchInput.on('input', function () {
+      let currentValue = $(this).val().toLowerCase().trim();
 
-    // Loop through all menu links
-    $('.p-gallery_menu-link').each(function () {
-      let linkText = $(this).text().toLowerCase().trim();
+      let menuLinks = $('.p-gallery-menu-link');
 
-      // If we find a match
-      if (linkText === currentValue) {
-        console.log('Match found:', linkText); // For debugging
-        // You can add any action here when match is found
-        // For example, add a class to the matching link:
-        $(this).addClass('w--current');
-        // Or trigger a click on it:
-        // $(this).trigger('click');
-      } else {
-        $(this).removeClass('w--current');
-      }
+      // Loop through all menu links
+      menuLinks.each(function () {
+        let linkText = $(this).text().toLowerCase().trim();
+
+        // If we find a match
+        if (linkText === currentValue) {
+          console.log('Match found:', linkText); // For debugging
+          // You can add any action here when match is found
+          // For example, add a class to the matching link:
+          $(this).addClass('w--current');
+          // Or trigger a click on it:
+          // $(this).trigger('click');
+        } else {
+          $(this).removeClass('w--current');
+        }
+      });
     });
+  }
+
+  // Initialize the monitor
+  monitorSearchInput();
+
+  $('.p-gallery_menu-link').on('click', function () {
+    let text = $(this).text();
+
+    searchInput.val(text);
+    searchInput[0].dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
-
-// Initialize the monitor
-monitorSearchInput();
-
-$('.p-gallery_menu-link').on('click', function () {
-  let text = $(this).text();
-
-  searchInput.val(text);
-  searchInput[0].dispatchEvent(new Event('input', { bubbles: true }));
-});
 
 // Animated Placeholder
 function typingPlaceholder($input, words, options = {}) {
@@ -111,4 +115,6 @@ function typingPlaceholder($input, words, options = {}) {
   type();
 }
 
-typingPlaceholder(searchInput, searchWords);
+if (typeof searchWords !== 'undefined') {
+  typingPlaceholder(searchInput, searchWords);
+}
