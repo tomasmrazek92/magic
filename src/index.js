@@ -214,80 +214,53 @@ $(document).ready(() => {
         },
       });
     }
-    function ensureVideoReady(video, callback) {
-      // console.log('🔍 Checking video readiness...');
+    function ensureVideoReady(video) {
+      return new Promise((resolve) => {
+        // Set up video attributes
+        video.setAttribute('preload', 'auto');
+        video.setAttribute('playsinline', '');
+        video.muted = true;
+        video.style.visibility = 'visible';
 
-      // Ensure correct attributes for mobile
-      video.setAttribute('preload', 'auto');
-      video.setAttribute('playsinline', '');
-      video.muted = true;
-      video.style.visibility = 'visible';
+        function completeLoading() {
+          // Hide loading element
+          $('.window-scroll-wall_loading').hide();
 
-      let isReady = false;
+          // Pause video to ensure it doesn't start playing
+          video.pause();
 
-      const handleReady = () => {
-        if (isReady) return;
-        isReady = true;
-        // console.log('🎬 Video is ready! Firing callback...');
-        video.pause(); // Ensure video remains paused
-        callback();
-      };
+          // Resolve the promise
+          resolve(video);
+        }
 
-      // Force video load without playback
-      video.load();
+        // Check if already loaded (HAVE_ENOUGH_DATA = 4)
+        if (video.readyState === 4) {
+          return completeLoading();
+        }
 
-      // Initial readiness check
-      // console.log(`✅ Initial readyState: ${video.readyState}`);
-      if (video.readyState >= 3) {
-        handleReady();
-        return;
-      }
+        // Listen for the canplaythrough event
+        video.addEventListener('canplaythrough', function onCanPlay() {
+          video.removeEventListener('canplaythrough', onCanPlay);
+          completeLoading();
+        });
 
-      // Event listeners for readiness
-      video.addEventListener('loadeddata', handleReady, { once: true });
-      video.addEventListener('canplaythrough', handleReady, { once: true });
-
-      video.addEventListener('error', (e) => {
-        // console.error('❌ Video error:', e);
+        // Force the video to start loading if needed
+        video.load();
       });
-
-      // Ensure paused state if autoplay happens
-      video.addEventListener('play', () => {
-        // console.warn('🚫 Video started unexpectedly. Pausing...');
-        video.pause();
-      });
-
-      // Fallback retry every 1.5 seconds
-      let retryCount = 0;
-      const retryInterval = setInterval(() => {
-        // console.warn(`⏳ Retry ${++retryCount}: readyState ${video.readyState}`);
-        if (video.readyState >= 3) {
-          clearInterval(retryInterval);
-          handleReady();
-        }
-        if (retryCount >= 5) {
-          clearInterval(retryInterval);
-          // console.error('🚫 Max retries reached. Video still not ready.');
-        }
-      }, 1500);
-
-      // Final fallback after 7 seconds
-      setTimeout(() => {
-        if (!isReady && video.readyState >= 2) {
-          // console.warn('⚠️ Final fallback triggered.');
-          handleReady();
-        }
-      }, 7000);
     }
 
     // Hide Labels
     gsap.set(labels, { opacity: 0 });
 
     // Video play
-    ensureVideoReady(video, () => {
-      // console.log('🏗️ Initializing ScrollTrigger...');
-      initScrollTrigger();
-    });
+    ensureVideoReady(video)
+      .then(() => {
+        // console.log('🏗️ Initializing ScrollTrigger...');
+        initScrollTrigger();
+      })
+      .catch((error) => {
+        $videoContainer.hide();
+      });
   }
 
   initVideoScroll({
