@@ -24,6 +24,14 @@ $(document).ready(() => {
         banner.removeClass('active');
       }
     }
+    if (navbar.length) {
+      // First check if we've scrolled past initial threshold
+      if (window.scrollY > scrollHeight * 2) {
+        navbar.addClass('fixed');
+      } else {
+        navbar.removeClass('fixed');
+      }
+    }
   });
 
   // Click
