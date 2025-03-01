@@ -140,6 +140,8 @@ $(document).ready(() => {
       containerSelector: '.section_window-scroll-wall',
       videoSelector: '.window-scroll-wall_video video',
       labelSelector: '.window-scroll-wall_label',
+      loadingElement: '.window-scroll-wall_loading',
+      loadingClass: 'wall-loading',
       labels: [],
       scrubSpeed: 0.5,
       fadeOverlap: 0.1,
@@ -177,24 +179,71 @@ $(document).ready(() => {
       gsap.registerPlugin(ScrollTrigger);
 
       const labelTimings = getLabelTimings();
-
       let lastTime = -1;
+      let seekRequest;
+      let isRendering = false;
+
+      // Create a buffer of the last few target times to smooth out rapid changes
+      const timeBuffer = [];
+      const BUFFER_SIZE = 3;
+
+      // Function to get the smoothed time value
+      function getSmoothedTime(newTime) {
+        // Add the new time to our buffer
+        timeBuffer.push(newTime);
+
+        // Keep the buffer at our desired size
+        while (timeBuffer.length > BUFFER_SIZE) {
+          timeBuffer.shift();
+        }
+
+        // If we don't have enough values yet, just return the new time
+        if (timeBuffer.length < 2) return newTime;
+
+        // Calculate the weighted average, giving more weight to recent values
+        let totalWeight = 0;
+        let weightedSum = 0;
+
+        for (let i = 0; i < timeBuffer.length; i++) {
+          const weight = i + 1; // 1, 2, 3, etc. - newer values have higher weight
+          weightedSum += timeBuffer[i] * weight;
+          totalWeight += weight;
+        }
+
+        return weightedSum / totalWeight;
+      }
+
+      // A more efficient rendering loop
+      function renderLoop() {
+        if (!isRendering) return;
+
+        if (Math.abs(targetTime - video.currentTime) > 0.01) {
+          video.currentTime = targetTime;
+        }
+
+        requestAnimationFrame(renderLoop);
+      }
+
+      // Store the target time globally
+      let targetTime = 0;
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: settings.containerSelector,
           start: 'top top',
           end: 'bottom bottom',
-          scrub: settings.scrubSpeed,
+          scrub: true, // Use true instead of a number for smoother scrolling
           onUpdate: (self) => {
-            const videoTime = self.progress * video.duration;
+            // Calculate raw target time from progress
+            const rawTargetTime = self.progress * video.duration;
 
-            // Throttle updates to avoid lag
-            if (Math.abs(videoTime - lastTime) > 0.1) {
-              requestAnimationFrame(() => {
-                video.currentTime = videoTime;
-              });
-              lastTime = videoTime;
+            // Apply smoothing
+            targetTime = getSmoothedTime(rawTargetTime);
+
+            // Start rendering loop if it's not already running
+            if (!isRendering) {
+              isRendering = true;
+              renderLoop();
             }
 
             // Handle label opacity
@@ -216,10 +265,35 @@ $(document).ready(() => {
               timing.element.css('opacity', Math.max(0, Math.min(1, opacity)));
             });
           },
-          onEnter: () => (video.currentTime = 0),
-          onLeave: () => (video.currentTime = video.duration),
-          onEnterBack: () => (video.currentTime = video.duration),
+          onEnter: () => {
+            targetTime = 0;
+            video.currentTime = 0;
+          },
+          onLeave: () => {
+            targetTime = video.duration;
+            video.currentTime = video.duration;
+          },
+          onEnterBack: () => {
+            targetTime = video.duration;
+            video.currentTime = video.duration;
+          },
+          onLeaveBack: () => {
+            targetTime = 0;
+            video.currentTime = 0;
+          },
+          // This will make the scrolling smoother by using RAF
+          fastScrollEnd: true,
         },
+      });
+
+      // Stop the rendering loop when user is not scrolling
+      ScrollTrigger.addEventListener('scrollEnd', function () {
+        isRendering = false;
+      });
+
+      // Also stop rendering when the page is not visible
+      document.addEventListener('visibilitychange', function () {
+        isRendering = !document.hidden && ScrollTrigger.isScrolling();
       });
     }
     function ensureVideoReady(video) {
@@ -228,37 +302,133 @@ $(document).ready(() => {
         video.setAttribute('preload', 'auto');
         video.setAttribute('playsinline', '');
         video.muted = true;
-        video.style.visibility = 'visible';
 
-        function completeLoading() {
-          // Hide loading element
-          $('.window-scroll-wall_loading').hide();
+        // Hide video during preloading (using both opacity and visibility)
+        video.style.opacity = '0';
+        video.style.visibility = 'hidden';
 
-          // Pause video to ensure it doesn't start playing
-          video.pause();
+        // Track loaded segments
+        const segmentSize = 10; // Number of segments to split the video into
+        const loadedSegments = new Array(segmentSize).fill(false);
 
-          // Resolve the promise
+        // Function to check if all segments are loaded
+        function allSegmentsLoaded() {
+          return loadedSegments.every((segment) => segment === true);
+        }
+
+        // Function to preload specific segment
+        function preloadSegment(index) {
+          return new Promise((resolve) => {
+            const segmentDuration = video.duration / segmentSize;
+            const targetTime = index * segmentDuration;
+
+            console.log(
+              `Preloading segment ${index + 1}/${segmentSize} at time ${targetTime.toFixed(2)}`
+            );
+
+            // Set to target time
+            video.currentTime = targetTime;
+
+            // Function to check if the segment is loaded
+            function checkSegmentLoaded() {
+              // If we can play at this position, mark segment as loaded
+              if (video.readyState === 4) {
+                loadedSegments[index] = true;
+                resolve();
+              } else {
+                // Check again after a short delay
+                setTimeout(checkSegmentLoaded, 200);
+              }
+            }
+
+            // Start checking
+            checkSegmentLoaded();
+          });
+        }
+
+        // Sequential segment loading with forced plays
+        async function forceLoadAllSegments() {
+          // Wait for video metadata to load first
+          if (video.readyState === 0) {
+            await new Promise((resolve) => {
+              video.addEventListener('loadedmetadata', resolve, { once: true });
+              video.load();
+            });
+          }
+
+          // Try playing through the video first to help with preloading
+          try {
+            video.currentTime = 0;
+            video.playbackRate = 8; // Fast forward
+            await video.play();
+
+            // Let it play for a bit
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            video.pause();
+          } catch (err) {
+            console.warn('Fast preload attempt failed:', err);
+          }
+
+          // Now try to load each segment specifically
+          for (let i = 0; i < segmentSize; i++) {
+            await preloadSegment(i);
+
+            // Update loading progress if possible
+            if (settings.loadingElement) {
+              const progress = (((i + 1) / segmentSize) * 100).toFixed(0);
+              $(settings.loadingElement).find('.progress-text').text(`${progress}%`);
+            }
+          }
+
+          // Final verification - check random points
+          for (let i = 0; i < 3; i++) {
+            const randomTime = Math.random() * video.duration;
+            video.currentTime = randomTime;
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
+
+          // Reset video to beginning
+          video.currentTime = 0;
+
+          // Show video and hide loader
+          video.style.opacity = '1';
+          video.style.visibility = 'visible';
+
+          if (settings.loadingElement) {
+            $(settings.loadingElement).hide();
+          }
+
+          if (settings.containerSelector && settings.loadingClass) {
+            $(settings.containerSelector).removeClass(settings.loadingClass);
+          }
+
           resolve(video);
         }
 
-        // Check if already loaded (HAVE_ENOUGH_DATA = 4)
-        if (video.readyState === 4) {
-          return completeLoading();
-        }
+        // Start the loading process
+        forceLoadAllSegments().catch((err) => {
+          console.error('Error during video preloading:', err);
 
-        // Listen for the canplaythrough event
-        video.addEventListener('canplaythrough', function onCanPlay() {
-          video.removeEventListener('canplaythrough', onCanPlay);
-          completeLoading();
+          // Fallback: just show the video and hide loader even if preloading failed
+          video.style.opacity = '1';
+          video.style.visibility = 'visible';
+
+          if (settings.loadingElement) {
+            $(settings.loadingElement).hide();
+          }
+
+          if (settings.containerSelector && settings.loadingClass) {
+            $(settings.containerSelector).removeClass(settings.loadingClass);
+          }
+
+          resolve(video);
         });
-
-        // Force the video to start loading if needed
-        video.load();
       });
     }
 
-    // Hide Labels
+    // Initial set
     gsap.set(labels, { opacity: 0 });
+    $(settings.containerSelector).addClass(settings.loadingClass);
 
     // Video play
     ensureVideoReady(video)
@@ -267,7 +437,7 @@ $(document).ready(() => {
         initScrollTrigger();
       })
       .catch((error) => {
-        $videoContainer.hide();
+        console.log(error);
       });
   }
 
@@ -301,8 +471,8 @@ $(document).ready(() => {
       { start: 0, end: 14 }, // 0:00 - 1:00
       { start: 14, end: 29 }, // 1:00 - 2:00
       { start: 29, end: 62 }, // 2:00 - 3:20
-      { start: 62, end: 71 }, // 3:20 - 5:00
-      { start: 62, end: 71 }, // 3:20 - 5:00 (duplicate)
+      { start: 62, end: 66 }, // 3:20 - 5:00
+      { start: 66, end: 71 }, // 3:20 - 5:00 (duplicate)
       { start: 71, end: 86 }, // 5:00 - 6:00
       { start: 86, end: 100 }, // 6:00 - 7:00
     ],
