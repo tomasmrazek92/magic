@@ -639,33 +639,6 @@ $(document).ready(() => {
           console.log(`Added new field: inf_custom_${paramName} with value: ${paramValue}`);
         }
       });
-
-      // Add debugging button
-      if (!$('#field-debugger').length) {
-        $('<button id="field-debugger">')
-          .text('Show Current Field Values')
-          .css({
-            position: 'fixed',
-            bottom: '10px',
-            right: '10px',
-            zIndex: 9999,
-            padding: '5px 10px',
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-          })
-          .click(function (e) {
-            e.preventDefault();
-            const values = {};
-            $('input[type="hidden"]').each(function () {
-              values[$(this).attr('name')] = $(this).val();
-            });
-            console.log('Current field values:', values);
-            alert('Current field values: ' + JSON.stringify(values, null, 2));
-          })
-          .appendTo('body');
-      }
     }
 
     // Run the function when page loads
