@@ -140,7 +140,6 @@ $(document).ready(() => {
       containerSelector: '.section_window-scroll-wall',
       videoSelector: '.window-scroll-wall_video video',
       labelSelector: '.window-scroll-wall_label',
-      loadingElement: '.window-scroll-wall_loading',
       loadingClass: 'wall-loading',
       labels: [],
       scrubSpeed: 0.5,
@@ -303,10 +302,6 @@ $(document).ready(() => {
         video.setAttribute('playsinline', '');
         video.muted = true;
 
-        // Hide video during preloading (using both opacity and visibility)
-        video.style.opacity = '0';
-        video.style.visibility = 'hidden';
-
         // Track loaded segments
         const segmentSize = 10; // Number of segments to split the video into
         const loadedSegments = new Array(segmentSize).fill(false);
@@ -372,12 +367,6 @@ $(document).ready(() => {
           // Now try to load each segment specifically
           for (let i = 0; i < segmentSize; i++) {
             await preloadSegment(i);
-
-            // Update loading progress if possible
-            if (settings.loadingElement) {
-              const progress = (((i + 1) / segmentSize) * 100).toFixed(0);
-              $(settings.loadingElement).find('.progress-text').text(`${progress}%`);
-            }
           }
 
           // Final verification - check random points
@@ -389,14 +378,6 @@ $(document).ready(() => {
 
           // Reset video to beginning
           video.currentTime = 0;
-
-          // Show video and hide loader
-          video.style.opacity = '1';
-          video.style.visibility = 'visible';
-
-          if (settings.loadingElement) {
-            $(settings.loadingElement).hide();
-          }
 
           if (settings.containerSelector && settings.loadingClass) {
             $(settings.containerSelector).removeClass(settings.loadingClass);
@@ -412,10 +393,6 @@ $(document).ready(() => {
           // Fallback: just show the video and hide loader even if preloading failed
           video.style.opacity = '1';
           video.style.visibility = 'visible';
-
-          if (settings.loadingElement) {
-            $(settings.loadingElement).hide();
-          }
 
           if (settings.containerSelector && settings.loadingClass) {
             $(settings.containerSelector).removeClass(settings.loadingClass);
