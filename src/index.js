@@ -456,4 +456,220 @@ $(document).ready(() => {
   });
 
   // #endregion
+
+  // #region tracking
+  $(document).ready(function () {
+    // Define specific UTM parameter mappings
+    const utmMappings = {
+      utm_content: 'inf_custom_Adname',
+      utm_campaign: 'inf_custom_CampaignSource',
+      utm_source: 'inf_custom_utmsource',
+      utm_location: 'inf_custom_utmlocation',
+    };
+
+    // Function to get all query parameters from URL
+    function getQueryParams() {
+      const params = {};
+      const queryString = window.location.search;
+
+      if (queryString) {
+        const urlParams = new URLSearchParams(queryString);
+        urlParams.forEach(function (value, key) {
+          // Convert the key to lowercase for consistent handling
+          const lowercaseKey = key.toLowerCase();
+          params[lowercaseKey] = value;
+        });
+      }
+
+      return params;
+    }
+
+    // Save parameters to sessionStorage
+    function saveParamsToSession(params) {
+      // Store each parameter individually in sessionStorage
+      $.each(params, function (key, value) {
+        sessionStorage.setItem(key, value);
+      });
+
+      // Store a flag indicating we've saved params
+      sessionStorage.setItem('paramsStored', 'true');
+    }
+
+    // Get parameters from sessionStorage
+    function getParamsFromSession() {
+      const params = {};
+      const paramsStored = sessionStorage.getItem('paramsStored');
+
+      if (paramsStored === 'true') {
+        // Get all items from sessionStorage
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          // Skip the flag item
+          if (key !== 'paramsStored') {
+            params[key] = sessionStorage.getItem(key);
+          }
+        }
+      }
+
+      return params;
+    }
+
+    // Function to handle form parameters
+    function handleFormParams() {
+      // Get URL parameters first
+      const urlParams = getQueryParams();
+      let sessionParams = getParamsFromSession();
+
+      // Clear session if URL contains our special UTM parameters
+      if (Object.keys(utmMappings).some((key) => urlParams[key.toLowerCase()])) {
+        console.log('Found UTM parameters in URL, refreshing session storage');
+        sessionStorage.clear();
+        sessionParams = {};
+      }
+
+      // Merge parameters, with URL taking priority
+      const mergedParams = { ...sessionParams, ...urlParams };
+
+      // Save the merged params to session storage
+      if (Object.keys(urlParams).length > 0) {
+        saveParamsToSession(mergedParams);
+      }
+
+      // Debug the parameters we'll be using
+      console.log('Using parameters:', mergedParams);
+
+      // First, handle the specific UTM mappings
+      $.each(utmMappings, function (utmParam, fieldName) {
+        const lowerParam = utmParam.toLowerCase();
+        if (mergedParams[lowerParam]) {
+          // Remove quotes if present
+          let paramValue = mergedParams[lowerParam];
+          if (
+            typeof paramValue === 'string' &&
+            paramValue.startsWith('"') &&
+            paramValue.endsWith('"')
+          ) {
+            paramValue = paramValue.substring(1, paramValue.length - 1);
+          }
+
+          // Find the field and update it
+          const field = $(`input[name="${fieldName}"]`);
+          if (field.length) {
+            field.val(paramValue);
+            field.attr('value', paramValue); // Update the attribute directly
+            console.log(`Mapped ${utmParam} to ${fieldName} with value: ${paramValue}`);
+          } else {
+            console.warn(`Field ${fieldName} not found for ${utmParam}`);
+          }
+        }
+      });
+
+      // Process remaining custom fields
+      $('input[name^="inf_custom_"]').each(function () {
+        const input = $(this);
+        const fullName = input.attr('name');
+
+        // Skip fields that were already handled by UTM mappings
+        if (Object.values(utmMappings).includes(fullName)) {
+          return;
+        }
+
+        const paramName = fullName.substring('inf_custom_'.length).toLowerCase();
+
+        // Check if we have a parameter for this field
+        if (mergedParams[paramName]) {
+          // Remove quotes if present
+          let paramValue = mergedParams[paramName];
+          if (
+            typeof paramValue === 'string' &&
+            paramValue.startsWith('"') &&
+            paramValue.endsWith('"')
+          ) {
+            paramValue = paramValue.substring(1, paramValue.length - 1);
+          }
+
+          // Set the value
+          input.val(paramValue);
+          input.attr('value', paramValue); // Update the attribute directly
+          console.log(`Updated ${fullName} with value: ${paramValue}`);
+        }
+      });
+
+      // Now handle parameters that don't have matching fields
+      $.each(mergedParams, function (paramName, paramValue) {
+        // Skip UTM parameters that were already mapped
+        if (
+          Object.keys(utmMappings)
+            .map((key) => key.toLowerCase())
+            .includes(paramName.toLowerCase())
+        ) {
+          return;
+        }
+
+        let fieldExists = false;
+
+        // Look for existing field case-insensitively
+        $('input[name^="inf_custom_"]').each(function () {
+          const fieldParamName = $(this).attr('name').substring('inf_custom_'.length).toLowerCase();
+          if (fieldParamName === paramName.toLowerCase()) {
+            fieldExists = true;
+            return false; // Break the each loop
+          }
+        });
+
+        // If no matching field was found, create a new hidden input
+        if (!fieldExists) {
+          // Remove quotes if present
+          if (
+            typeof paramValue === 'string' &&
+            paramValue.startsWith('"') &&
+            paramValue.endsWith('"')
+          ) {
+            paramValue = paramValue.substring(1, paramValue.length - 1);
+          }
+
+          const formContainer = $('input[name="inf_form_xid"]').parent();
+          const newField = $('<input>', {
+            type: 'hidden',
+            name: 'inf_custom_' + paramName,
+            value: paramValue,
+          });
+
+          formContainer.append(newField);
+          console.log(`Added new field: inf_custom_${paramName} with value: ${paramValue}`);
+        }
+      });
+
+      // Add debugging button
+      if (!$('#field-debugger').length) {
+        $('<button id="field-debugger">')
+          .text('Show Current Field Values')
+          .css({
+            position: 'fixed',
+            bottom: '10px',
+            right: '10px',
+            zIndex: 9999,
+            padding: '5px 10px',
+            background: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+          })
+          .click(function (e) {
+            e.preventDefault();
+            const values = {};
+            $('input[type="hidden"]').each(function () {
+              values[$(this).attr('name')] = $(this).val();
+            });
+            console.log('Current field values:', values);
+            alert('Current field values: ' + JSON.stringify(values, null, 2));
+          })
+          .appendTo('body');
+      }
+    }
+
+    // Run the function when page loads
+    handleFormParams();
+  });
+  // #endregion
 });
