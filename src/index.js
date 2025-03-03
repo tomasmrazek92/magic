@@ -246,21 +246,35 @@ $(document).ready(() => {
             }
 
             // Handle label opacity
-            labelTimings.forEach((timing) => {
+            labelTimings.forEach((timing, index) => {
               const fadeSize = settings.fadeOverlap;
               const duration = timing.end - timing.start;
               const fadeDuration = Math.min(fadeSize * duration, duration / 3);
 
               let opacity = 0;
-              if (self.progress >= timing.start && self.progress <= timing.end) {
-                if (self.progress < timing.start + fadeDuration) {
-                  opacity = (self.progress - timing.start) / fadeDuration;
-                } else if (self.progress > timing.end - fadeDuration) {
-                  opacity = (timing.end - self.progress) / fadeDuration;
-                } else {
+
+              // Special handling for the last label
+              if (index === labelTimings.length - 1) {
+                if (self.progress >= timing.start) {
+                  // If we're past the start point, keep it visible
                   opacity = 1;
+                } else if (self.progress < timing.start + fadeDuration) {
+                  // Fade in
+                  opacity = (self.progress - timing.start) / fadeDuration;
+                }
+              } else {
+                // Normal handling for other labels
+                if (self.progress >= timing.start && self.progress <= timing.end) {
+                  if (self.progress < timing.start + fadeDuration) {
+                    opacity = (self.progress - timing.start) / fadeDuration;
+                  } else if (self.progress > timing.end - fadeDuration) {
+                    opacity = (timing.end - self.progress) / fadeDuration;
+                  } else {
+                    opacity = 1;
+                  }
                 }
               }
+
               timing.element.css('opacity', Math.max(0, Math.min(1, opacity)));
             });
           },
@@ -297,6 +311,17 @@ $(document).ready(() => {
     }
     function ensureVideoReady(video) {
       return new Promise((resolve) => {
+        // Save original inline styles and apply them to parent
+        const originalStyles = video.getAttribute('style') || '';
+        const { parentElement } = video;
+        if (parentElement) {
+          parentElement.setAttribute('style', originalStyles);
+        }
+
+        // Hide video until ready
+        video.style.visibility = 'hidden';
+        video.style.opacity = '0';
+
         // Set up video attributes
         video.setAttribute('preload', 'auto');
         video.setAttribute('playsinline', '');
@@ -379,6 +404,13 @@ $(document).ready(() => {
           // Reset video to beginning
           video.currentTime = 0;
 
+          // Show video after preloading is complete
+          video.style.visibility = 'visible';
+          video.style.opacity = '1';
+          if (parentElement) {
+            parentElement.removeAttribute('style');
+          }
+
           if (settings.containerSelector && settings.loadingClass) {
             $(settings.containerSelector).removeClass(settings.loadingClass);
           }
@@ -390,9 +422,12 @@ $(document).ready(() => {
         forceLoadAllSegments().catch((err) => {
           console.error('Error during video preloading:', err);
 
-          // Fallback: just show the video and hide loader even if preloading failed
-          video.style.opacity = '1';
+          // Fallback: show the video even if preloading failed
           video.style.visibility = 'visible';
+          video.style.opacity = '1';
+          if (parentElement) {
+            parentElement.removeAttribute('style');
+          }
 
           if (settings.containerSelector && settings.loadingClass) {
             $(settings.containerSelector).removeClass(settings.loadingClass);

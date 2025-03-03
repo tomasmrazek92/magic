@@ -96,6 +96,10 @@ const getMergedSwiperOptions = (options, uniqueKey) => {
       prevEl: `.swiper-arrow.prev.${uniqueKey}`,
       nextEl: `.swiper-arrow.next.${uniqueKey}`,
     },
+    mousewheel: {
+      enabled: true,
+      forceToAxis: true,
+    },
     pagination: paginationConfig,
     ...options,
     on: enhancedEvents, // Override the 'on' property after spreading options

@@ -15,7 +15,7 @@ window.fsAttributes.push([
         // If filters are active, execute this block
         $('[data-filter-default]').hide();
         $('[data-filter-results]').css('display', 'flex');
-        $('.search_clear').show();
+        $('.search_clear').css('display', 'flex');
       } else {
         // If no filters are active, execute this block
         $('[data-filter-default]').show();
