@@ -25,6 +25,18 @@ $(document).ready(function () {
 
     // Count images in current visual and update color items
     const imgCount = currentVisual.find('img').length;
+
+    // Check if the currently active color index is valid for this visual
+    if (currentColor >= imgCount) {
+      // Reset to the first color if current selection is out of range
+      currentColor = 0;
+
+      // Make sure we update the visual to show the first color
+      currentVisual.find('img').hide();
+      currentVisual.find('img').eq(currentColor).show();
+    }
+
+    // Update color item visibility based on available options
     $('.styles_hero-color_item').each(function (i) {
       if (i < imgCount) {
         $(this).show();
@@ -32,6 +44,20 @@ $(document).ready(function () {
         $(this).hide();
       }
     });
+
+    // Reset active state to match currentColor
+    $('.styles_hero-color_item').find('.styles_hero-color_item-inner').removeClass('is-active');
+    $('.styles_hero-color_item')
+      .eq(currentColor)
+      .find('.styles_hero-color_item-inner')
+      .addClass('is-active');
+
+    // Update the label
+    const activeItemLabel = $('.styles_hero-color_item')
+      .eq(currentColor)
+      .find('.styles_hero-color_item-label')
+      .text();
+    $('.styles_hero-color_item-label.cc-top').find('p').text(activeItemLabel);
   }
 
   function initColorPicker() {
@@ -52,7 +78,7 @@ $(document).ready(function () {
       // Label
       $(label).filter('.cc-top').find('p').text($(this).find(label).text());
 
-      // Visuaů
+      // Visual
       currentColor = index;
       currentVisual.find('img').hide();
       currentVisual.find('img').eq(currentColor).fadeIn();
@@ -76,7 +102,6 @@ $(document).ready(function () {
             initColorPicker();
           },
           slideChange: (swiper) => {
-            console.log('Hello');
             updateColorType(swiper.realIndex);
           },
         },
