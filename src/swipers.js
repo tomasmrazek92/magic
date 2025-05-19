@@ -402,28 +402,6 @@ function initVimeoPlayer(targetElement) {
         vimeoElement.setAttribute('data-vimeo-activated', 'true');
         vimeoElement.setAttribute('data-vimeo-playing', 'true');
 
-        // Force fullscreen on devices below 992px if supported
-        if (
-          window.innerWidth < 992 &&
-          !!(
-            document.fullscreenEnabled ||
-            document.webkitFullscreenEnabled ||
-            document.mozFullScreenEnabled ||
-            document.msFullscreenEnabled
-          )
-        ) {
-          const fullscreenElement = document.getElementById(iframeID);
-          if (fullscreenElement) {
-            vimeoElement.setAttribute('data-vimeo-fullscreen', 'true');
-            (
-              fullscreenElement.requestFullscreen ||
-              fullscreenElement.webkitRequestFullscreen ||
-              fullscreenElement.mozRequestFullScreen ||
-              fullscreenElement.msRequestFullscreen
-            ).call(fullscreenElement);
-          }
-        }
-
         vimeoElement._vimeoState.hasAttemptedPlay = true;
         vimeoElement._vimeoState.playAttempts++;
 
@@ -431,6 +409,7 @@ function initVimeoPlayer(targetElement) {
           .play()
           .then(() => {
             debugLog('Play command succeeded');
+            forceFullscreenOnMobile(vimeoElement, iframeID);
           })
           .catch((error) => {
             console.error('Play command failed:', error);
@@ -571,6 +550,39 @@ function initVimeoPlayer(targetElement) {
       ].forEach((event) => {
         document.addEventListener(event, handleFullscreenChange);
       });
+
+      // Add this function near other utility functions in your code
+      function forceFullscreenOnMobile(vimeoElement, iframeID) {
+        if (window.innerWidth < 992) {
+          setTimeout(() => {
+            const fullscreenElement = document.getElementById(iframeID);
+            if (!fullscreenElement) return;
+
+            const isFullscreen =
+              document.fullscreenElement ||
+              document.webkitFullscreenElement ||
+              document.mozFullScreenElement ||
+              document.msFullscreenElement;
+
+            if (!isFullscreen) {
+              try {
+                vimeoElement.setAttribute('data-vimeo-fullscreen', 'true');
+                if (fullscreenElement.requestFullscreen) {
+                  fullscreenElement.requestFullscreen();
+                } else if (fullscreenElement.webkitRequestFullscreen) {
+                  fullscreenElement.webkitRequestFullscreen();
+                } else if (fullscreenElement.mozRequestFullScreen) {
+                  fullscreenElement.mozRequestFullScreen();
+                } else if (fullscreenElement.msRequestFullscreen) {
+                  fullscreenElement.msRequestFullscreen();
+                }
+              } catch (e) {
+                console.error('Fullscreen error:', e);
+              }
+            }
+          }, 300); // Small delay to ensure player is ready
+        }
+      }
 
       // Convert seconds to mm:ss
       function secondsTimeSpanToHMS(s) {
