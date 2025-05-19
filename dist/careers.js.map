@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../bin/live-reload.js", "../src/careers.js"],
-  "sourcesContent": ["new EventSource(`${SERVE_ORIGIN}/esbuild`).addEventListener('change', () => location.reload());\n", "// Prefill Role\n$('[data-modal-target=\"join\"]').on('click', function () {\n  let role = $(this).closest('.w-dyn-item').find('[data-role=\"name\"]').text();\n  let input = $('.careers-role_form').find('input[name=\"position\"]');\n  input.val(role);\n});\n"],
-  "mappings": ";;;AAAA,MAAI,YAAY,GAAG,iCAAsB,EAAE,iBAAiB,UAAU,MAAM,SAAS,OAAO,CAAC;;;ACC7F,IAAE,4BAA4B,EAAE,GAAG,SAAS,WAAY;AACtD,QAAI,OAAO,EAAE,IAAI,EAAE,QAAQ,aAAa,EAAE,KAAK,oBAAoB,EAAE,KAAK;AAC1E,QAAI,QAAQ,EAAE,oBAAoB,EAAE,KAAK,wBAAwB;AACjE,UAAM,IAAI,IAAI;AAAA,EAChB,CAAC;",
-  "names": []
-}

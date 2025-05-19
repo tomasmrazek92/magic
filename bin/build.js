@@ -12,7 +12,6 @@ const ENTRY_POINTS = [
   'src/styles.js',
   'src/plyr-video.js',
   'src/gallery.js',
-  'src/careers.js',
   'src/index.js',
 ];
 

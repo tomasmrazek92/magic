@@ -1,1 +1,0 @@
-"use strict";(()=>{$('[data-modal-target="join"]').on("click",function(){let t=$(this).closest(".w-dyn-item").find('[data-role="name"]').text();$(".careers-role_form").find('input[name="position"]').val(t)});})();

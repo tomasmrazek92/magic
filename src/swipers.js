@@ -402,6 +402,28 @@ function initVimeoPlayer(targetElement) {
         vimeoElement.setAttribute('data-vimeo-activated', 'true');
         vimeoElement.setAttribute('data-vimeo-playing', 'true');
 
+        // Force fullscreen on devices below 992px if supported
+        if (
+          window.innerWidth < 992 &&
+          !!(
+            document.fullscreenEnabled ||
+            document.webkitFullscreenEnabled ||
+            document.mozFullScreenEnabled ||
+            document.msFullscreenEnabled
+          )
+        ) {
+          const fullscreenElement = document.getElementById(iframeID);
+          if (fullscreenElement) {
+            vimeoElement.setAttribute('data-vimeo-fullscreen', 'true');
+            (
+              fullscreenElement.requestFullscreen ||
+              fullscreenElement.webkitRequestFullscreen ||
+              fullscreenElement.mozRequestFullScreen ||
+              fullscreenElement.msRequestFullscreen
+            ).call(fullscreenElement);
+          }
+        }
+
         vimeoElement._vimeoState.hasAttemptedPlay = true;
         vimeoElement._vimeoState.playAttempts++;
 
