@@ -99,6 +99,7 @@ const getMergedSwiperOptions = (options, uniqueKey) => {
     mousewheel: {
       enabled: true,
       forceToAxis: true,
+      thresholdDelta: 25,
     },
     pagination: paginationConfig,
     ...options,

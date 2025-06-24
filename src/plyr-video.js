@@ -1,131 +1,118 @@
-// Store players by section ID to manage them independently
-const playersBySection = new Map();
-const loadedSections = new Set();
+const allPlayers = [];
+
+window.VideoSystem = {
+  init: initVideos,
+  initSwiper: initSwiperVideos,
+  playActiveSlide: playActiveSlideVideo,
+  pauseAll: pauseAllVideos,
+};
 
 function initVideos() {
-  // Find all sections containing videos
-  const videoSections = $('section:has(.plyr_video)');
-  if (!videoSections.length) return;
-
-  const isMobile = window.innerWidth <= 991;
-
-  // Create observer for lazy loading
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        const sectionId = entry.target.id || `video-section-${Date.now()}`;
-
-        if (entry.isIntersecting && !loadedSections.has(sectionId)) {
-          loadSectionVideos(entry.target, sectionId, isMobile);
-          loadedSections.add(sectionId);
-          // Only disconnect observer for this specific section
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.1 }
-  );
-
-  // Observe each section independently
-  videoSections.each(function () {
-    if (!this.id) {
-      this.id = `video-section-${Date.now()}`;
-    }
-    observer.observe(this);
+  $('.plyr_video').each(function () {
+    initSingleVideo($(this));
   });
 }
 
-function loadSectionVideos(section, sectionId, isMobile) {
-  const sectionVideos = $(section).find('.plyr_video');
-  const sectionPlayers = [];
-  playersBySection.set(sectionId, sectionPlayers);
+function initSingleVideo($video) {
+  if ($video.data('plyr-initialized')) return;
 
-  sectionVideos.each(function () {
-    const $video = $(this);
-    const $parent = $video.parent();
-    const videoSrc = $parent.attr('data-video-src');
-    const posterSrc = $parent.attr('data-poster-src');
+  const $parent = $video.parent();
+  const videoSrc = $parent.attr('data-video-src');
+  const posterSrc = $parent.attr('data-poster-src');
 
-    if (posterSrc) $video.attr('poster', posterSrc);
-    $video.attr('src', videoSrc);
-    $video.attr('preload', 'auto');
+  if (posterSrc) $video.attr('poster', posterSrc);
+  $video.attr('src', videoSrc);
+  $video.attr('preload', 'auto');
 
-    const playerOptions = {
-      controls: ['play', 'mute'],
-      clickToPlay: false,
-      muted: true,
-      resetOnEnd: true,
-      poster: posterSrc,
-    };
+  const playerOptions = {
+    controls: ['play', 'progress', 'mute'],
+    clickToPlay: false,
+    muted: true,
+    resetOnEnd: true,
+    poster: posterSrc,
+  };
 
-    const player = new Plyr($video, playerOptions);
+  const player = new Plyr($video[0], playerOptions);
 
-    player.on('ready', () => {
+  player.on('ready', () => {
+    player.muted = true;
+    $parent.find('.plyr__controls').hide();
+  });
+
+  allPlayers.push(player);
+  $video.data('plyr-initialized', true);
+  initControls($parent, player);
+}
+
+function initSwiperVideos(swiperInstance) {
+  $(swiperInstance.slides)
+    .find('.plyr_video')
+    .each(function () {
+      initSingleVideo($(this));
+    });
+}
+
+function initControls($parent, player) {
+  let component = $parent.closest('[data-plyr="component"]');
+  let overlay = component.find('[data-plyr="overlay"]');
+  overlay.on('click', function (e) {
+    overlay.hide();
+    player.muted = false;
+    player.restart();
+    player.play();
+    $parent.find('.plyr__controls').show();
+  });
+
+  if (component.attr('data-plyr-play') === 'hover') {
+    component.on('mouseenter', function () {
+      player.play();
+      overlay.hide();
       player.muted = true;
+      $parent.find('.plyr__controls').show();
     });
 
-    sectionPlayers.push(player);
-
-    if (isMobile) {
-      initMobileControls($parent, player, $video[0], sectionId);
-    } else {
-      initDesktopControls($parent, player, $video[0], sectionId);
-    }
-  });
-}
-
-function initMobileControls($parent, player, videoElement, sectionId) {
-  let isPlaying = false;
+    component.on('mouseleave', function () {
+      player.pause();
+      overlay.show();
+      player.restart();
+      player.muted = true;
+      $parent.find('.plyr__controls').hide();
+    });
+  }
 
   $parent.on('click', function (e) {
-    e.preventDefault();
-
-    if (!isPlaying) {
-      pauseOtherPlayers(videoElement, sectionId);
-      player.once('playing', () => {
-        isPlaying = true;
-      });
-      player.muted = false;
-      player.play();
-    } else {
-      player.pause();
-      player.muted = true;
-      isPlaying = false;
+    if (
+      !$(e.target).closest('.plyr__controls').length &&
+      !$(e.target).closest('[data-plyr="overlay"]').length
+    ) {
+      if (player.playing) {
+        player.pause();
+      } else {
+        player.play();
+      }
     }
   });
 }
 
-function initDesktopControls($parent, player, videoElement, sectionId) {
-  $parent.on('mouseenter', function () {
-    pauseOtherPlayers(videoElement, sectionId);
-    player.play();
-  });
-
-  $parent.on('mouseleave', function () {
+function pauseAllVideos() {
+  allPlayers.forEach(function (player) {
     player.pause();
     player.restart();
     player.muted = true;
   });
-
-  $parent.on('click', function (e) {
-    e.preventDefault();
-    player.muted = !player.muted;
-  });
+  $('[data-plyr="overlay"]').show();
+  $('.plyr__controls').hide();
 }
 
-function pauseOtherPlayers(currentVideo, sectionId) {
-  const sectionPlayers = playersBySection.get(sectionId) || [];
-  sectionPlayers.forEach(function (player) {
-    if (player.media !== currentVideo) {
-      player.pause();
-      player.restart();
-      player.muted = true;
-    }
-  });
+function playActiveSlideVideo(activeSlide) {
+  const $video = $(activeSlide).find('.plyr_video').first();
+  if (!$video.length) return;
+
+  const player = allPlayers.find((p) => p.media === $video[0]);
+  if (player) {
+    pauseAllVideos();
+    player.play();
+  }
 }
 
-// Initialize on document ready
 $(document).ready(initVideos);
-
-// Reinitialize on dynamic content changes if needed
-// $(document).on('contentChanged', initVideos);

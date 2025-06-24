@@ -1,4 +1,3 @@
-import { initVideos } from './plyr-video';
 import { initSwipers } from './utils/globalFunctions';
 
 // Sample data for swiperInstances, specific to this page
@@ -125,6 +124,32 @@ const swiperInstances = [
       loop: true,
       threshhold: 20,
       slideToClickedSlide: true,
+    },
+    'all',
+  ],
+  [
+    '.section_hp-carousel',
+    '.swiper-testimonials',
+    'testimonial-slider',
+    {
+      slidesPerView: 'auto',
+      centeredSlides: true,
+      spaceBetween: 24,
+      loop: true,
+      threshold: 100,
+      slideToClickedSlide: true,
+      on: {
+        init: function () {
+          window.VideoSystem.initSwiper(this);
+        },
+        slideChangeTransitionStart: function () {
+          window.VideoSystem.pauseAll();
+        },
+        slideChangeTransitionEnd: function () {
+          const activeSlide = this.slides[this.activeIndex];
+          window.VideoSystem.playActiveSlide(activeSlide);
+        },
+      },
     },
     'all',
   ],

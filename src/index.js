@@ -492,6 +492,185 @@ $(document).ready(() => {
 
   // #endregion
 
+  // #region circleScroll
+  function initCircleSroll() {
+    let tl;
+
+    function initCircleAnimation() {
+      if (tl) {
+        tl.kill();
+      }
+
+      const $section = $('.section_hp-simplified-wall');
+
+      if (!$section.length) return;
+
+      const $circle = $('.hp-circle_circle');
+      const $itemsWrap = $('.hp-circle_items-wrap');
+      const $items = $('.hp-circle_items-wrap .hp-circle_item');
+      const $visuals = $('.hp-circle-visuals-item');
+
+      const itemCount = $items.length;
+      const rotationPerItem = 360 / itemCount;
+      const totalRotation = rotationPerItem * (itemCount - 1);
+
+      tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: $section[0],
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+          onUpdate: function (self) {
+            const { progress } = self;
+            let activeIndex = 0;
+
+            $items.each(function (index) {
+              const $item = $(this);
+              const itemProgress = progress * itemCount - index;
+              let opacity = 0;
+              let scale = 0.5;
+
+              if (itemProgress >= -1 && itemProgress <= 2) {
+                if (itemProgress <= 0) {
+                  opacity = Math.max(0, 1 + itemProgress);
+                  scale = 0.5 + opacity * 0.5;
+                } else if (itemProgress <= 1) {
+                  opacity = 1;
+                  scale = 1;
+                  activeIndex = index;
+                } else {
+                  opacity = Math.max(0, 2 - itemProgress);
+                  scale = 0.5 + opacity * 0.5;
+                }
+
+                gsap.set($item, {
+                  opacity: opacity,
+                  scale: scale,
+                  zIndex: Math.floor(opacity * 100),
+                });
+              } else {
+                gsap.set($item, {
+                  opacity: 0,
+                  scale: 0.5,
+                  zIndex: 1,
+                });
+              }
+            });
+
+            $visuals.each(function (index) {
+              const $visual = $(this);
+              gsap.set($visual, {
+                opacity: index === activeIndex ? 1 : 0,
+              });
+            });
+          },
+        },
+      });
+
+      gsap.set($circle, { rotation: 90 });
+      gsap.set($items, { rotation: -90 });
+
+      tl.to(
+        $circle,
+        {
+          rotation: 90 - totalRotation,
+          ease: 'none',
+          duration: 1,
+        },
+        0
+      );
+
+      tl.to(
+        $items,
+        {
+          rotation: -90 + totalRotation,
+          ease: 'none',
+          duration: 1,
+        },
+        0
+      );
+
+      gsap.set($items, {
+        opacity: 0,
+        scale: 0.5,
+      });
+
+      gsap.set($visuals, {
+        opacity: 0,
+      });
+
+      gsap.set($items.first(), {
+        opacity: 1,
+        scale: 1,
+        zIndex: 100,
+      });
+
+      gsap.set($visuals.first(), {
+        opacity: 1,
+      });
+    }
+
+    initCircleAnimation();
+
+    let resizeTimeout;
+    $(window).on('resize', function () {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function () {
+        ScrollTrigger.refresh();
+        initCircleAnimation();
+      }, 250);
+    });
+  }
+
+  // Init
+  initCircleSroll();
+  // #endregion
+
+  // #region draggable
+  function initBeforeAfterSplitSlider() {
+    gsap.registerPlugin(Draggable);
+    const splitters = document.querySelectorAll('[data-splitter="wrap"]');
+
+    if (!splitters) return;
+
+    const setupSplitter = (splitter) => {
+      const handle = splitter.querySelector('[data-splitter="handle"]');
+      const after = splitter.querySelector('[data-splitter="after"]');
+
+      let bounds = splitter.getBoundingClientRect();
+      let currentPercent = parseFloat(splitter.getAttribute('data-splitter-initial')) || 50;
+
+      const setPositions = (percent) => {
+        bounds = splitter.getBoundingClientRect();
+        const positionX = (percent / 100) * bounds.width;
+        gsap.set(handle, { x: positionX, left: 'unset' });
+        gsap.set(after, { clipPath: `inset(0 0 0 ${percent}%)` });
+      };
+
+      setPositions(currentPercent);
+
+      Draggable.create(handle, {
+        type: 'x',
+        bounds: splitter,
+        cursor: 'ew-resize',
+        activeCursor: 'grabbing',
+        onDrag() {
+          currentPercent = (this.x / bounds.width) * 100;
+          gsap.set(after, { clipPath: `inset(0 0 0 ${currentPercent}%)` });
+        },
+      });
+
+      window.addEventListener('resize', () => setPositions(currentPercent));
+    };
+
+    splitters.forEach(setupSplitter);
+  }
+
+  // Init
+  initBeforeAfterSplitSlider();
+
+  // #endregion
+
   // #region tracking
   $(document).ready(function () {
     // Define specific UTM parameter mappings
