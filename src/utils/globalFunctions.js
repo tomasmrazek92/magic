@@ -13,7 +13,6 @@ export const createResponsiveSwiper = (
 ) => {
   // Step 2: Fetch elements by their componentSelector; if none, exit the function
   let elements = $(componentSelector).add(swiperSelector);
-  console.log(elements.length);
   if (elements.length !== 2) return;
 
   // Reset the uniqueIdCounters for this classSelector to 0
@@ -24,6 +23,8 @@ export const createResponsiveSwiper = (
   elements.each(function () {
     // Generate a unique key for this instance based on the classSelector and a counter
     let uniqueKey = `${classSelector}_${uniqueIdCounters[classSelector]}`;
+
+    console.log(uniqueKey);
 
     // Step 4: Add unique classes to swiper container, arrows and pagination for this instance
     addUniqueClassesToElements(this, swiperSelector, uniqueKey, [
