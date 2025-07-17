@@ -10,6 +10,7 @@ window.fsAttributes.push([
 
     // The `renderitems` event runs whenever the list renders items after filtering.
     filterInstance.listInstance.on('renderitems', function () {
+      VideoModal.init();
       let entries = filterInstance.filtersData[0].values.size;
       if (entries >= 1) {
         // If filters are active, execute this block
@@ -22,6 +23,17 @@ window.fsAttributes.push([
         $('[data-filter-results]').hide();
         $('.search_clear').hide();
       }
+    });
+  },
+]);
+
+// FS LOad
+window.fsAttributes.push([
+  'cmsload',
+  (listInstances) => {
+    // The `renderitems` event runs whenever the list renders items after switching pages.
+    listInstance.on('renderitems', (renderedItems) => {
+      VideoModal.init();
     });
   },
 ]);
@@ -118,3 +130,122 @@ function typingPlaceholder($input, words, options = {}) {
 if (typeof searchWords !== 'undefined') {
   typingPlaceholder(searchInput, searchWords);
 }
+
+let player;
+
+const VideoModal = {
+  init: function () {
+    this.bindEvents();
+  },
+
+  bindEvents: function () {
+    const self = this;
+    $('[data-video-item]').on('click', function () {
+      self.handleVideoClick($(this));
+    });
+    $('.video-modal_close').on('click', function () {
+      self.closeModal();
+    });
+    $('.video-modal_close-btn').on('click', function () {
+      self.closeModal();
+    });
+    $('.video-modal').on('click', function (e) {
+      if (e.target === this) {
+        self.closeModal();
+      }
+    });
+    $(document).on('keydown', function (e) {
+      if (e.key === 'Escape' && $('.video-modal').is(':visible')) {
+        self.closeModal();
+      }
+    });
+  },
+
+  handleVideoClick: function ($item) {
+    const mp4Source = $item.attr('data-mp4-source');
+    const webmSource = $item.attr('data-webm-source');
+    const posterSrc = $item.attr('data-poster-src');
+
+    this.destroyExistingPlayer();
+    this.setupVideoSources(mp4Source, webmSource, posterSrc);
+    this.initializePlayer();
+  },
+
+  destroyExistingPlayer: function () {
+    if (player) {
+      player.destroy();
+      player = null;
+    }
+  },
+
+  setupVideoSources: function (mp4Source, webmSource, posterSrc) {
+    const $video = $('.video-modal').find('video');
+
+    $video.empty().removeAttr('poster');
+
+    if (webmSource) {
+      $video.append(`<source src="${webmSource}" type="video/webm">`);
+    }
+    if (mp4Source) {
+      $video.append(`<source src="${mp4Source}" type="video/mp4">`);
+    }
+    if (posterSrc) {
+      $video.attr('poster', posterSrc);
+    }
+
+    $video[0].load();
+  },
+
+  initializePlayer: function () {
+    const self = this;
+    const $modal = $('.video-modal');
+    const $video = $modal.find('video');
+
+    setTimeout(function () {
+      player = new Plyr($video[0], {
+        controls: [
+          'play-large',
+          'play',
+          'progress',
+          'current-time',
+          'mute',
+          'volume',
+          'fullscreen',
+        ],
+        autoplay: false,
+        loop: { active: true },
+        ratio: null,
+      });
+
+      $('.video-modal .plyr').css({
+        'object-fit': 'contain',
+        width: '100%',
+        height: '100%',
+      });
+
+      self.showModal($modal);
+    }, 50);
+  },
+
+  showModal: function ($modal) {
+    $modal.fadeIn(300, function () {
+      setTimeout(function () {
+        if (player) {
+          player.play();
+        }
+      }, 100);
+    });
+  },
+
+  closeModal: function () {
+    const $modal = $('.video-modal');
+
+    $modal.fadeOut(300, function () {
+      VideoModal.destroyExistingPlayer();
+    });
+  },
+};
+
+$(document).ready(function () {
+  VideoModal.init();
+});

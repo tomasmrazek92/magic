@@ -90,6 +90,31 @@ const swiperInstances = [
     'all',
   ],
   [
+    '.section_windows-energy',
+    '.swiper-energy',
+    'energy-slider',
+    {
+      breakpoints: {
+        0: {
+          centeredSlides: true,
+          spaceBetween: 24,
+          slidesPerView: 1.1,
+        },
+        767: {
+          centeredSlides: true,
+          spaceBetween: 28,
+          slidesPerView: 2,
+        },
+        992: {
+          spaceBetween: 48,
+          centeredSlides: false,
+          slidesPerView: 'auto',
+        },
+      },
+    },
+    'all',
+  ],
+  [
     '.section_windows-control',
     '.swiper-control',
     'control-slider',
