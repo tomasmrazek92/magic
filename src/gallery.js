@@ -27,10 +27,13 @@ window.fsAttributes.push([
   },
 ]);
 
-// FS LOad
+// FS Load
 window.fsAttributes.push([
   'cmsload',
   (listInstances) => {
+    // The callback passes a `filterInstances` array with all the `CMSFilters` instances on the page.
+    const [listInstance] = listInstances;
+
     // The `renderitems` event runs whenever the list renders items after switching pages.
     listInstance.on('renderitems', (renderedItems) => {
       VideoModal.init();
@@ -54,7 +57,6 @@ if (!window.location.href.includes('/blog-categories/')) {
 
         // If we find a match
         if (linkText === currentValue) {
-          console.log('Match found:', linkText); // For debugging
           // You can add any action here when match is found
           // For example, add a class to the matching link:
           $(this).addClass('w--current');
@@ -173,6 +175,11 @@ const VideoModal = {
 
   destroyExistingPlayer: function () {
     if (player) {
+      const videoElement = player.media;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+      }
       player.destroy();
       player = null;
     }
@@ -239,6 +246,14 @@ const VideoModal = {
 
   closeModal: function () {
     const $modal = $('.video-modal');
+
+    if (player) {
+      const videoElement = player.media;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+      }
+    }
 
     $modal.fadeOut(300, function () {
       VideoModal.destroyExistingPlayer();
