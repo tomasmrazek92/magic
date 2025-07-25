@@ -493,135 +493,376 @@ $(document).ready(() => {
   // #endregion
 
   // #region circleScroll
+  gsap.registerPlugin(MotionPathPlugin);
   function initCircleSroll() {
-    let tl;
+    let mm = gsap.matchMedia();
 
-    function initCircleAnimation() {
-      if (tl) {
-        tl.kill();
+    mm.add('(min-width: 992px)', () => {
+      let tl;
+      let motionTl;
+
+      function initCircleAnimation() {
+        if (tl) {
+          const progress = tl.progress();
+          tl.progress(0).kill();
+        }
+        if (motionTl) {
+          motionTl.kill();
+        }
+
+        const $section = $('.section_hp-simplified-wall');
+        if (!$section.length) return;
+
+        const $svgWrap = $('.hp-circle_circles');
+        const $path = $svgWrap.find('svg path')[0];
+        const $items = $('.hp-circle_items-wrap .hp-circle_item');
+        const $visuals = $('.hp-circle-visuals-item');
+
+        if (!$path || !$items.length) return;
+
+        const itemCount = $items.length;
+
+        gsap.set($items, {
+          zIndex: (i, target, all) => all.length - i,
+          opacity: 0,
+          scale: 0.5,
+        });
+
+        motionTl = gsap.timeline({ paused: true });
+
+        $items.each(function (index) {
+          const $item = $(this);
+          const offset = index * 0.25;
+
+          motionTl.to(
+            $item,
+            {
+              motionPath: {
+                path: $path,
+                align: $path,
+                curviness: 2,
+                alignOrigin: [0.5, 0.5],
+                start: 1,
+                end: 0,
+              },
+              duration: 1,
+              ease: 'none',
+            },
+            offset
+          );
+
+          motionTl
+            .fromTo(
+              $item,
+              { opacity: 0, scale: 0.5 },
+              { opacity: 0.5, scale: 0.5, duration: 0.25, ease: 'none' },
+              offset
+            )
+            .to(
+              $item,
+              {
+                opacity: 1,
+                scale: 1,
+                duration: 0.25,
+                ease: 'none',
+              },
+              offset + 0.25
+            )
+            .to(
+              $item,
+              {
+                opacity: 0.5,
+                scale: 0.5,
+                duration: 0.25,
+                ease: 'none',
+              },
+              offset + 0.5
+            )
+            .to(
+              $item,
+              {
+                opacity: 0,
+                scale: 0.5,
+                duration: 0.25,
+                ease: 'none',
+              },
+              offset + 0.75
+            );
+        });
+
+        tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: $section[0],
+            start: 'top top',
+            end: 'bottom bottom',
+            scrub: 1,
+            onUpdate: function (self) {
+              const { progress } = self;
+              const adjustedProgress = progress * 0.5 + 0.25;
+              motionTl.progress(adjustedProgress);
+
+              const activeIndex = Math.min(Math.floor(progress * itemCount), itemCount - 1);
+
+              $visuals.each(function (index) {
+                const $visual = $(this);
+                gsap.set($visual, {
+                  opacity: index === activeIndex ? 1 : 0,
+                });
+              });
+            },
+          },
+        });
+
+        gsap.set($visuals, {
+          opacity: 0,
+        });
+
+        gsap.set($visuals.first(), {
+          opacity: 1,
+        });
+
+        $items.on('click', function () {
+          const clickedIndex = $(this).index();
+          const sectionTop = $section.offset().top;
+          const sectionHeight = $section.outerHeight();
+          const windowHeight = $(window).height();
+          const availableScrollHeight = sectionHeight - windowHeight;
+
+          let scrollProgress;
+          if (clickedIndex === 0) {
+            scrollProgress = 0;
+          } else if (clickedIndex === itemCount - 1) {
+            scrollProgress = 1;
+          } else {
+            const firstJump = 0.167;
+            const remainingDistance = 1 - firstJump;
+            const remainingSteps = itemCount - 2;
+            const stepSize = remainingDistance / remainingSteps;
+
+            if (clickedIndex === 1) {
+              scrollProgress = firstJump;
+            } else {
+              scrollProgress = firstJump + (clickedIndex - 1) * stepSize;
+            }
+          }
+
+          const targetScrollPos = sectionTop + availableScrollHeight * scrollProgress;
+
+          $('html, body').animate(
+            {
+              scrollTop: targetScrollPos,
+            },
+            1500
+          );
+        });
+
+        motionTl.progress(0.25);
+
+        if (typeof progress !== 'undefined') {
+          tl.progress(progress);
+        }
+
+        ScrollTrigger.refresh();
       }
 
-      const $section = $('.section_hp-simplified-wall');
+      initCircleAnimation();
 
-      if (!$section.length) return;
+      let resizeTimeout;
+      $(window).on('resize', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function () {
+          initCircleAnimation();
+        }, 250);
+      });
 
-      const $circle = $('.hp-circle_circle');
-      const $itemsWrap = $('.hp-circle_items-wrap');
-      const $items = $('.hp-circle_items-wrap .hp-circle_item');
-      const $visuals = $('.hp-circle-visuals-item');
+      return () => {
+        if (tl) tl.kill();
+        if (motionTl) motionTl.kill();
+        $(window).off('resize');
+      };
+    });
 
-      const itemCount = $items.length;
-      const rotationPerItem = 360 / itemCount;
-      const totalRotation = rotationPerItem * (itemCount - 1);
+    mm.add('(max-width: 991px)', () => {
+      let mobileSwiper;
+      let currentActiveIndex = 0;
 
-      tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: $section[0],
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 1,
-          onUpdate: function (self) {
-            const { progress } = self;
-            let activeIndex = 0;
+      function animateItemToPosition($item, $path, startPos, endPos, opacity, scale) {
+        const tl = gsap.timeline();
+        tl.to($item, {
+          duration: 1,
+          motionPath: {
+            path: $path,
+            align: $path,
+            curviness: 2,
+            alignOrigin: [0.5, 0.5],
+            start: startPos,
+            end: endPos,
+          },
+          ease: 'power2.out',
+        });
 
-            $items.each(function (index) {
-              const $item = $(this);
-              const itemProgress = progress * itemCount - index;
-              let opacity = 0;
-              let scale = 0.5;
+        gsap.to($item, {
+          duration: 0.6,
+          opacity: opacity,
+          scale: scale,
+          ease: 'power2.out',
+        });
+      }
 
-              if (itemProgress >= -1 && itemProgress <= 2) {
-                if (itemProgress <= 0) {
-                  opacity = Math.max(0, 1 + itemProgress);
-                  scale = 0.5 + opacity * 0.5;
-                } else if (itemProgress <= 1) {
-                  opacity = 1;
-                  scale = 1;
-                  activeIndex = index;
-                } else {
-                  opacity = Math.max(0, 2 - itemProgress);
-                  scale = 0.5 + opacity * 0.5;
-                }
+      function setItemPosition($item, $path, position, opacity, scale) {
+        const tl = gsap.timeline();
+        tl.to($item, {
+          duration: 1,
+          motionPath: {
+            path: $path,
+            align: $path,
+            curviness: 2,
+            alignOrigin: [0.5, 0.5],
+            start: position,
+            end: position,
+          },
+          ease: 'none',
+        });
 
-                gsap.set($item, {
-                  opacity: opacity,
-                  scale: scale,
-                  zIndex: Math.floor(opacity * 100),
-                });
-              } else {
-                gsap.set($item, {
-                  opacity: 0,
-                  scale: 0.5,
-                  zIndex: 1,
-                });
-              }
-            });
+        gsap.to($item, {
+          opacity: opacity,
+          scale: scale,
+        });
+      }
 
-            $visuals.each(function (index) {
-              const $visual = $(this);
-              gsap.set($visual, {
-                opacity: index === activeIndex ? 1 : 0,
-              });
-            });
+      function updateMobileItem(newActiveIndex) {
+        const $items = $('.hp-circle_items-wrap .hp-circle_item');
+        const $mobilePath = $('.hp-circle_circles-mobile svg path')[0];
+        const itemCount = $items.length;
+
+        // Animations
+        if (!$mobilePath) return;
+
+        const isGoingForward = newActiveIndex > currentActiveIndex;
+        const isGoingBackward = newActiveIndex < currentActiveIndex;
+        const isStarting = currentActiveIndex === newActiveIndex;
+
+        if (isGoingForward || currentActiveIndex === null) {
+          animateItemToPosition($items.eq(newActiveIndex), $mobilePath, 1, 0.5, 1, 1);
+
+          if (newActiveIndex - 1 >= 0) {
+            animateItemToPosition($items.eq(newActiveIndex - 1), $mobilePath, 0.5, 0, 0.7, 0.7);
+          }
+
+          if (newActiveIndex - 2 >= 0) {
+            setItemPosition($items.eq(newActiveIndex - 2), $mobilePath, 0, 0, 0);
+          }
+
+          if (newActiveIndex + 1 < itemCount) {
+            setItemPosition($items.eq(newActiveIndex + 1), $mobilePath, 1, 0.7, 0.7);
+          }
+        } else if (isGoingBackward) {
+          animateItemToPosition($items.eq(newActiveIndex), $mobilePath, 0, 0.5, 1, 1);
+
+          if (newActiveIndex + 1 < itemCount) {
+            animateItemToPosition($items.eq(newActiveIndex + 1), $mobilePath, 0.5, 0, 0.7, 0.7);
+          }
+
+          if (newActiveIndex - 1 >= 0) {
+            console.log($items.eq(newActiveIndex - 1));
+            setItemPosition($items.eq(newActiveIndex - 1), $mobilePath, 0, 0.5, 0.7);
+          }
+
+          if (newActiveIndex + 1 < itemCount) {
+            animateItemToPosition($items.eq(newActiveIndex + 1), $mobilePath, 0.5, 1, 0.5, 0.7);
+          }
+
+          if (newActiveIndex + 2 < itemCount) {
+            animateItemToPosition($items.eq(newActiveIndex + 2), $mobilePath, 1, 1, 0, 0);
+          }
+        } else if (isStarting) {
+          setItemPosition($items.eq(newActiveIndex), $mobilePath, 0.5, 1, 1);
+          setItemPosition($items.eq(newActiveIndex + 1), $mobilePath, 1, 0.5, 0.7);
+        }
+
+        currentActiveIndex = newActiveIndex;
+
+        // Content
+        let heading = $items.eq(newActiveIndex).find('[data-headline]').text();
+        let desc = $items.eq(newActiveIndex).find('[data-desc]').text();
+
+        if (heading + desc) {
+          let contentBox = $('.hp-circle-visuals-content-box');
+          contentBox.find('[data-headline]').text(heading);
+          contentBox.find('[data-desc]').text(desc);
+        }
+      }
+
+      function initMobileItems() {
+        const $items = $('.hp-circle_items-wrap .hp-circle_item');
+        const $mobilePath = $('.hp-circle_circles-mobile svg path')[0];
+
+        if (!$mobilePath) return;
+
+        $items.each(function (index) {
+          const $item = $(this);
+
+          const initTl = gsap.timeline();
+          initTl.to($item, {
+            duration: 1,
+            motionPath: {
+              path: $mobilePath,
+              align: $mobilePath,
+              curviness: 2,
+              alignOrigin: [0.5, 0.5],
+              start: 1,
+              end: 0,
+            },
+            ease: 'none',
+          });
+          initTl.progress(0);
+
+          gsap.set($item, {
+            opacity: 0,
+            scale: 0.5,
+          });
+        });
+
+        $items.on('click', function () {
+          let index = $(this).index();
+          mobileSwiper.slideTo(index);
+        });
+      }
+
+      initMobileItems();
+
+      mobileSwiper = new Swiper('.section_hp-simplified-wall .hp-circle_visuals', {
+        slidesPerView: 'auto',
+        centeredSlides: true,
+        effect: 'fade',
+        fadeEffect: {
+          crossFade: true,
+        },
+        speed: 600,
+        slideToClickedSlide: true,
+        navigation: {
+          prevEl: `.swiper-arrow.prev.is-circle-wall`,
+          nextEl: `.swiper-arrow.next.is-circle-wall`,
+        },
+        on: {
+          init: function () {
+            setTimeout(() => updateMobileItem(0), 100);
+          },
+          slideChange: function () {
+            updateMobileItem(this.activeIndex);
           },
         },
       });
 
-      gsap.set($circle, { rotation: 90 });
-      gsap.set($items, { rotation: -90 });
-
-      tl.to(
-        $circle,
-        {
-          rotation: 90 - totalRotation,
-          ease: 'none',
-          duration: 1,
-        },
-        0
-      );
-
-      tl.to(
-        $items,
-        {
-          rotation: -90 + totalRotation,
-          ease: 'none',
-          duration: 1,
-        },
-        0
-      );
-
-      gsap.set($items, {
-        opacity: 0,
-        scale: 0.5,
-      });
-
-      gsap.set($visuals, {
-        opacity: 0,
-      });
-
-      gsap.set($items.first(), {
-        opacity: 1,
-        scale: 1,
-        zIndex: 100,
-      });
-
-      gsap.set($visuals.first(), {
-        opacity: 1,
-      });
-    }
-
-    initCircleAnimation();
-
-    let resizeTimeout;
-    $(window).on('resize', function () {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(function () {
-        ScrollTrigger.refresh();
-        initCircleAnimation();
-      }, 250);
+      return () => {
+        if (mobileSwiper) {
+          mobileSwiper.destroy(true, true);
+        }
+      };
     });
-  }
 
+    return mm;
+  }
   // Init
   initCircleSroll();
   // #endregion

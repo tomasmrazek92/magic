@@ -12,6 +12,7 @@ window.fsAttributes.push([
     filterInstance.listInstance.on('renderitems', function () {
       VideoModal.init();
       let entries = filterInstance.filtersData[0].values.size;
+      console.log(entries);
       if (entries >= 1) {
         // If filters are active, execute this block
         $('[data-filter-default]').hide();
