@@ -517,6 +517,7 @@ $(document).ready(() => {
         const $path = $svgWrap.find('svg path')[0];
         const $items = $('.hp-circle_items-wrap .hp-circle_item');
         const $visuals = $('.hp-circle-visuals-item');
+        const itemPortion = 1 / ($items.length - 1);
 
         if (!$path || !$items.length) return;
 
@@ -597,11 +598,11 @@ $(document).ready(() => {
             end: 'bottom bottom',
             scrub: 1,
             onUpdate: function (self) {
-              const { progress } = self;
-              const adjustedProgress = progress * 0.5 + 0.25;
+              const rawProgress = self.progress;
+              const adjustedProgress = itemPortion + rawProgress * (1 - 2 * itemPortion);
               motionTl.progress(adjustedProgress);
 
-              const activeIndex = Math.min(Math.floor(progress * itemCount), itemCount - 1);
+              const activeIndex = Math.min(Math.floor(rawProgress * itemCount), itemCount - 1);
 
               $visuals.each(function (index) {
                 const $visual = $(this);
@@ -621,42 +622,7 @@ $(document).ready(() => {
           opacity: 1,
         });
 
-        $items.on('click', function () {
-          const clickedIndex = $(this).index();
-          const sectionTop = $section.offset().top;
-          const sectionHeight = $section.outerHeight();
-          const windowHeight = $(window).height();
-          const availableScrollHeight = sectionHeight - windowHeight;
-
-          let scrollProgress;
-          if (clickedIndex === 0) {
-            scrollProgress = 0;
-          } else if (clickedIndex === itemCount - 1) {
-            scrollProgress = 1;
-          } else {
-            const firstJump = 0.167;
-            const remainingDistance = 1 - firstJump;
-            const remainingSteps = itemCount - 2;
-            const stepSize = remainingDistance / remainingSteps;
-
-            if (clickedIndex === 1) {
-              scrollProgress = firstJump;
-            } else {
-              scrollProgress = firstJump + (clickedIndex - 1) * stepSize;
-            }
-          }
-
-          const targetScrollPos = sectionTop + availableScrollHeight * scrollProgress;
-
-          $('html, body').animate(
-            {
-              scrollTop: targetScrollPos,
-            },
-            1500
-          );
-        });
-
-        motionTl.progress(0.25);
+        motionTl.progress(itemPortion);
 
         if (typeof progress !== 'undefined') {
           tl.progress(progress);
@@ -849,6 +815,9 @@ $(document).ready(() => {
             setTimeout(() => updateMobileItem(0), 100);
           },
           slideChange: function () {
+            if (typeof optibaseSendConversionEvent === 'function') {
+              optibaseSendConversionEvent("slidechangecircle")
+            }
             updateMobileItem(this.activeIndex);
           },
         },
@@ -863,8 +832,34 @@ $(document).ready(() => {
 
     return mm;
   }
+  function trackCircleScroll(){
+    if (typeof window.optibaseActiveVariants === 'undefined') return;
+    
+    $(document).ready(function() {
+        let hasLogged = false;
+        
+        $(window).on('scroll', function() {
+            if (hasLogged) return;
+            
+            const section = $('.section_hp-simplified-wall');
+            if (section.length === 0) return;
+            
+            const sectionBottom = section.offset().top + section.outerHeight();
+            const scrollPosition = $(window).scrollTop() + $(window).height() / 2;
+            
+            if (scrollPosition > sectionBottom) {
+                if (typeof optibaseSendConversionEvent === 'function') {
+                  console.log("Test")
+                    optibaseSendConversionEvent("scrollpastcirclewall");
+                }
+                hasLogged = true;
+            }
+        });
+    });
+}
   // Init
   initCircleSroll();
+  trackCircleScroll()
   // #endregion
 
   // #region draggable
@@ -875,37 +870,42 @@ $(document).ready(() => {
     if (!splitters) return;
 
     const setupSplitter = (splitter) => {
-      const handle = splitter.querySelector('[data-splitter="handle"]');
-      const after = splitter.querySelector('[data-splitter="after"]');
+        const handle = splitter.querySelector('[data-splitter="handle"]');
+        const after = splitter.querySelector('[data-splitter="after"]');
 
-      let bounds = splitter.getBoundingClientRect();
-      let currentPercent = parseFloat(splitter.getAttribute('data-splitter-initial')) || 50;
+        let bounds = splitter.getBoundingClientRect();
+        let currentPercent = parseFloat(splitter.getAttribute('data-splitter-initial')) || 50;
 
-      const setPositions = (percent) => {
-        bounds = splitter.getBoundingClientRect();
-        const positionX = (percent / 100) * bounds.width;
-        gsap.set(handle, { x: positionX, left: 'unset' });
-        gsap.set(after, { clipPath: `inset(0 0 0 ${percent}%)` });
-      };
+        const setPositions = (percent) => {
+            bounds = splitter.getBoundingClientRect();
+            const positionX = (percent / 100) * bounds.width;
+            gsap.set(handle, { x: positionX, left: 'unset' });
+            gsap.set(after, { clipPath: `inset(0 0 0 ${percent}%)` });
+        };
 
-      setPositions(currentPercent);
+        setPositions(currentPercent);
 
-      Draggable.create(handle, {
-        type: 'x',
-        bounds: splitter,
-        cursor: 'ew-resize',
-        activeCursor: 'grabbing',
-        onDrag() {
-          currentPercent = (this.x / bounds.width) * 100;
-          gsap.set(after, { clipPath: `inset(0 0 0 ${currentPercent}%)` });
-        },
-      });
+        Draggable.create(handle, {
+            type: 'x',
+            bounds: splitter,
+            cursor: 'ew-resize',
+            activeCursor: 'grabbing',
+            onDrag() {
+                currentPercent = (this.x / bounds.width) * 100;
+                gsap.set(after, { clipPath: `inset(0 0 0 ${currentPercent}%)` });
+            },
+            onDragEnd() {
+                if (typeof optibaseSendConversionEvent === 'function') {
+                    optibaseSendConversionEvent("beforeaftermoved");
+                }
+            }
+        });
 
-      window.addEventListener('resize', () => setPositions(currentPercent));
+        window.addEventListener('resize', () => setPositions(currentPercent));
     };
 
     splitters.forEach(setupSplitter);
-  }
+}
 
   // Init
   initBeforeAfterSplitSlider();
