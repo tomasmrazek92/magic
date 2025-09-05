@@ -152,48 +152,6 @@ const swiperInstances = [
     },
     'all',
   ],
-  [
-    '.section_hp-carousel.is-v1',
-    '.swiper-testimonials-1',
-    'testimonial-slider-1',
-    {
-      slidesPerView: 'auto',
-      centeredSlides: true,
-      spaceBetween: 24,
-      loop: true,
-      speed: 600,
-      threshold: 100,
-      slideToClickedSlide: true,
-      on: {
-        init: function () {
-          window.VideoSystem.initSwiper(this);
-        },
-        slideChangeTransitionStart: function (swiper) {
-          const activeSlide = this.slides[this.activeIndex];
-          window.VideoSystem.pauseAll(activeSlide);
-          gsap.to($('[data-quote-el]').add('[data-name-el]'), {
-            opacity: 0,
-            duration: 0.3,
-            onComplete: () => {
-              let { activeIndex, slides } = swiper;
-              let activeSlide = slides[activeIndex];
-
-              $('[data-quote-el]').text($(activeSlide).attr('data-quote'));
-              $('[data-name-el]').text($(activeSlide).attr('data-name'));
-            },
-          });
-        },
-        slideChangeTransitionEnd: function () {
-          const activeSlide = this.slides[this.activeIndex];
-          window.VideoSystem.playActiveSlide(activeSlide);
-          gsap.to($('[data-quote-el]').add('[data-name-el]'), {
-            opacity: 1,
-          });
-        },
-      },
-    },
-    'all',
-  ],
 ];
 
 $(document).ready(function () {
@@ -201,95 +159,81 @@ $(document).ready(function () {
 
   const initCustomers = () => {
     const customerSwiper = new Swiper('.swiper-testimonials.is-v2', {
-      slidesPerView: 'auto',
+      slidesPerView: 3,
       spaceBetween: 32,
       speed: 600,
       threshold: 20,
       mousewheel: {
-        enabled: false,
+        enabled: true,
+        forceToAxis: true,
+        thresholdDelta: 25,
       },
-      breakpoints: {
-        0: {
-          allowTouchMove: true,
-          allowSlideNext: true,
-          allowSlidePrev: true,
-        },
-        480: {
-          allowTouchMove: false,
-          allowSlideNext: false,
-          allowSlidePrev: false,
-        },
+      navigation: {
+        prevEl: '.swiper-arrow.prev.is-testimonials-2',
+        nextEl: '.swiper-arrow.next.is-testimonials-2',
       },
       on: {
         init: function () {
-          window.VideoSystem.initSwiper(this, 'preview', true, true);
-          $(this.el).find('.swiper_testimonials-card.is-v2').first().addClass('is-active');
-        },
-        slideChangeTransitionStart: function (swiper) {
-          const activeSlide = this.slides[this.activeIndex];
-          window.VideoSystem.pauseAll(activeSlide);
-        },
-        slideChangeTransitionEnd: function () {
-          const activeSlide = this.slides[this.activeIndex];
-          window.VideoSystem.playActiveSlide(activeSlide);
+          VideoSystem.initSwiper(this, 'preview');
+
+          $(this.slides).each(function () {
+            const $slide = $(this);
+            const $video = $slide.find('.plyr_video');
+
+            if ($video.length > 0) {
+              $slide.on('mouseenter', function () {
+                const $video = $slide.find('.plyr_video');
+                if ($video.attr('data-user-controlled') !== 'true') {
+                  VideoSystem.playPreview($video);
+                }
+              });
+
+              $slide.on('mouseleave', function () {
+                const $video = $slide.find('.plyr_video');
+                if (
+                  $video.attr('data-user-controlled') !== 'true' &&
+                  !$slide.is(customerSwiper.slides[customerSwiper.activeIndex])
+                ) {
+                  VideoSystem.pauseSingle($video);
+                }
+              });
+            }
+          });
         },
       },
-    });
-
-    const forceRecalculateSwiper = (index) => {
-      customerSwiper.allowSlideNext = true;
-      customerSwiper.allowSlidePrev = true;
-      customerSwiper.updateSize();
-      customerSwiper.updateSlides();
-      customerSwiper.updateProgress();
-      customerSwiper.updateSlidesClasses();
-      customerSwiper.slideTo(index, 600);
-      customerSwiper.update();
-      if (window.innerWidth >= 480) {
-        customerSwiper.allowSlideNext = false;
-        customerSwiper.allowSlidePrev = false;
-      }
-    };
-
-    const slides = document.querySelectorAll(
-      '.swiper-testimonials.is-v2 .swiper-slide.testimonials-slide.is-v2'
-    );
-
-    const handleSlideChange = (index) => {
-      $('.swiper_testimonials-card.is-v2').removeClass('is-active');
-      $('.swiper_testimonials-card.is-v2').eq(index).addClass('is-active');
-
-      if (window.innerWidth >= 480) {
-        setTimeout(() => {
-          forceRecalculateSwiper(index);
-        }, 500);
-      } else {
-        forceRecalculateSwiper(index);
-      }
-    };
-
-    slides.forEach((slide, index) => {
-      slide.addEventListener('click', () => {
-        handleSlideChange(index);
-      });
-    });
-
-    $('.swiper-arrow.prev.is-testimonials-2').on('click', () => {
-      const currentIndex = customerSwiper.activeIndex;
-      if (currentIndex > 0) {
-        handleSlideChange(currentIndex - 1);
-      }
-    });
-
-    $('.swiper-arrow.next.is-testimonials-2').on('click', () => {
-      const currentIndex = customerSwiper.activeIndex;
-      if (currentIndex < slides.length - 1) {
-        handleSlideChange(currentIndex + 1);
-      }
+      breakpoints: {
+        0: {
+          slidesPerView: 1,
+        },
+        768: {
+          slidesPerView: 2,
+        },
+        992: {
+          slidesPerView: 3,
+        },
+      },
     });
 
     return customerSwiper;
   };
 
   const customerSwiper = initCustomers();
+
+  $('.swiper-slide.testimonials-slide.is-v2').on('click', function () {
+    let index = $(this).index();
+    const $video = $(this).find('.plyr_video');
+
+    if ($video.length) {
+      const playState = $video.data('play-state');
+      const isUserControlled = $video.attr('data-user-controlled') === 'true';
+
+      if (playState === 'full' && isUserControlled) {
+        window.VideoSystem.pauseSingle($video);
+      } else {
+        window.VideoSystem.playFull($video);
+      }
+    }
+
+    customerSwiper.slideTo(index);
+  });
 });
