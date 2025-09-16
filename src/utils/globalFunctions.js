@@ -24,8 +24,6 @@ export const createResponsiveSwiper = (
     // Generate a unique key for this instance based on the classSelector and a counter
     let uniqueKey = `${classSelector}_${uniqueIdCounters[classSelector]}`;
 
-    console.log(uniqueKey);
-
     // Step 4: Add unique classes to swiper container, arrows and pagination for this instance
     addUniqueClassesToElements(this, swiperSelector, uniqueKey, [
       '.swiper-arrow',

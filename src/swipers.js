@@ -159,7 +159,6 @@ $(document).ready(function () {
 
   const initCustomers = () => {
     const customerSwiper = new Swiper('.swiper-testimonials.is-v2', {
-      slidesPerView: 'auto',
       spaceBetween: 32,
       speed: 600,
       threshold: 20,
@@ -169,40 +168,75 @@ $(document).ready(function () {
         forceToAxis: true,
         thresholdDelta: 25,
       },
-      navigation: {
-        prevEl: '.swiper-arrow.prev.is-testimonials-2',
-        nextEl: '.swiper-arrow.next.is-testimonials-2',
+      breakpoints: {
+        0: {
+          slidesPerView: 1,
+          allowTouchMove: true,
+          allowSlideNext: true,
+          allowSlidePrev: true,
+        },
+        480: {
+          slidesPerView: 'auto',
+          allowTouchMove: false,
+          allowSlideNext: false,
+          allowSlidePrev: false,
+        },
       },
       on: {
         init: function () {
-          VideoSystem.initSwiper(this, 'preview');
+          const initializeVideoSystem = () => {
+            VideoSystem.initSwiper(this, 'preview');
 
-          $(this.slides).each(function () {
-            const $slide = $(this);
-            const $video = $slide.find('.plyr_video');
+            $(this.el).find('.swiper_testimonials-card.is-v2').first().addClass('is-active');
 
-            if ($video.length > 0) {
-              $slide.on('mouseenter', function () {
-                const $video = $slide.find('.plyr_video');
-                if ($video.attr('data-user-controlled') !== 'true') {
-                  VideoSystem.playPreview($video);
-                }
-              });
+            $(this.slides).each(function () {
+              const $slide = $(this);
+              const $video = $slide.find('.plyr_video');
 
-              $slide.on('mouseleave', function () {
-                const $video = $slide.find('.plyr_video');
-                if (
-                  $video.attr('data-user-controlled') !== 'true' &&
-                  !$slide.is(customerSwiper.slides[customerSwiper.activeIndex])
-                ) {
-                  VideoSystem.pauseSingle($video);
-                }
-              });
+              if ($video.length > 0) {
+                $slide.on('mouseenter', function () {
+                  const $video = $slide.find('.plyr_video');
+                  if ($video.attr('data-user-controlled') !== 'true') {
+                    VideoSystem.playPreview($video);
+                  }
+                });
+
+                $slide.on('mouseleave', function () {
+                  const $video = $slide.find('.plyr_video');
+                  if (
+                    $video.attr('data-user-controlled') !== 'true' &&
+                    !$slide.is(customerSwiper.slides[customerSwiper.activeIndex])
+                  ) {
+                    VideoSystem.pauseSingle($video);
+                  }
+                });
+              }
+            });
+          };
+
+          const checkVideoSystem = () => {
+            try {
+              if (VideoSystem && VideoSystem.initSwiper) {
+                initializeVideoSystem();
+                return true;
+              }
+            } catch (e) {
+              return false;
             }
-          });
+            return false;
+          };
+
+          if (!checkVideoSystem()) {
+            const interval = setInterval(() => {
+              if (checkVideoSystem()) {
+                clearInterval(interval);
+              }
+            }, 100);
+          }
         },
-        slideChange: function (swiper) {
-          updateVideo($(swiper.slides).eq(swiper.activeIndex));
+        slideChangeTransitionStart: function (swiper) {
+          const activeSlide = this.slides[this.activeIndex];
+          updateVideo(activeSlide);
         },
       },
     });
@@ -229,4 +263,56 @@ $(document).ready(function () {
 
     customerSwiper.slideTo(index);
   }
+
+  const forceRecalculateSwiper = (index) => {
+    customerSwiper.allowSlideNext = true;
+    customerSwiper.allowSlidePrev = true;
+    customerSwiper.updateSize();
+    customerSwiper.updateSlides();
+    customerSwiper.updateProgress();
+    customerSwiper.updateSlidesClasses();
+    customerSwiper.slideTo(index, 600);
+    customerSwiper.update();
+    if (window.innerWidth >= 480) {
+      customerSwiper.allowSlideNext = false;
+      customerSwiper.allowSlidePrev = false;
+    }
+  };
+
+  const slides = document.querySelectorAll(
+    '.swiper-testimonials.is-v2 .swiper-slide.testimonials-slide.is-v2'
+  );
+
+  const handleSlideChange = (index) => {
+    $('.swiper_testimonials-card.is-v2').removeClass('is-active');
+    $('.swiper_testimonials-card.is-v2').eq(index).addClass('is-active');
+
+    if (window.innerWidth >= 480) {
+      setTimeout(() => {
+        forceRecalculateSwiper(index);
+      }, 500);
+    } else {
+      forceRecalculateSwiper(index);
+    }
+  };
+
+  slides.forEach((slide, index) => {
+    slide.addEventListener('click', () => {
+      handleSlideChange(index);
+    });
+  });
+
+  $('.swiper-arrow.prev.is-testimonials-2').on('click', () => {
+    const currentIndex = customerSwiper.activeIndex;
+    if (currentIndex > 0) {
+      handleSlideChange(currentIndex - 1);
+    }
+  });
+
+  $('.swiper-arrow.next.is-testimonials-2').on('click', () => {
+    const currentIndex = customerSwiper.activeIndex;
+    if (currentIndex < slides.length - 1) {
+      handleSlideChange(currentIndex + 1);
+    }
+  });
 });
