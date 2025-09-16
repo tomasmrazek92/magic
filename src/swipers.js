@@ -159,10 +159,11 @@ $(document).ready(function () {
 
   const initCustomers = () => {
     const customerSwiper = new Swiper('.swiper-testimonials.is-v2', {
-      slidesPerView: 3,
+      slidesPerView: 'auto',
       spaceBetween: 32,
       speed: 600,
       threshold: 20,
+      slideToClickedSlide: true,
       mousewheel: {
         enabled: true,
         forceToAxis: true,
@@ -200,16 +201,8 @@ $(document).ready(function () {
             }
           });
         },
-      },
-      breakpoints: {
-        0: {
-          slidesPerView: 1,
-        },
-        768: {
-          slidesPerView: 2,
-        },
-        992: {
-          slidesPerView: 3,
+        slideChange: function (swiper) {
+          updateVideo($(swiper.slides).eq(swiper.activeIndex));
         },
       },
     });
@@ -219,9 +212,9 @@ $(document).ready(function () {
 
   const customerSwiper = initCustomers();
 
-  $('.swiper-slide.testimonials-slide.is-v2').on('click', function () {
-    let index = $(this).index();
-    const $video = $(this).find('.plyr_video');
+  function updateVideo(el) {
+    let index = $(el).index();
+    const $video = $(el).find('.plyr_video');
 
     if ($video.length) {
       const playState = $video.data('play-state');
@@ -235,5 +228,5 @@ $(document).ready(function () {
     }
 
     customerSwiper.slideTo(index);
-  });
+  }
 });

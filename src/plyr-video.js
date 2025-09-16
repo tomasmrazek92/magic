@@ -217,7 +217,7 @@ function playVideoFull($video) {
 
   const player = allPlayers.find((p) => p.media === $video[0]);
   if (player) {
-    const $parent = $video.parent();
+    const $parent = $video.closest('.plyr');
     const component = $parent.closest('[data-plyr="component"]');
     const overlay = component.find('[data-plyr="overlay"]');
 
