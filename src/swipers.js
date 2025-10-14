@@ -25,16 +25,6 @@ const swiperInstances = [
     'all',
   ],
   [
-    '.section_hp-reviews',
-    '.swiper-reviews',
-    'reviews-slider',
-    {
-      slidesPerView: 'auto',
-      autoHeight: true,
-    },
-    'all',
-  ],
-  [
     '.section_windows-styles',
     '.swiper-styles',
     'styles-slider',
@@ -149,6 +139,56 @@ const swiperInstances = [
       loop: true,
       threshhold: 20,
       slideToClickedSlide: true,
+    },
+    'all',
+  ],
+  [
+    '.section_hp-new-hero',
+    '.swiper-hp-hero',
+    'hp_hero-slider',
+    {
+      slidesPerView: 'auto',
+      threshold: 20,
+    },
+    'all',
+  ],
+  [
+    '.section_hp-slider',
+    '.swiper-products',
+    'products-slider',
+    {
+      slidesPerView: 'auto',
+      breakpoints: {
+        0: {
+          spaceBetween: 16,
+        },
+        767: {
+          spaceBetween: 24,
+        },
+        992: {
+          spaceBetween: 32,
+        },
+      },
+    },
+    'all',
+  ],
+  [
+    '.section_hp-reviews',
+    '.swiper-reviews.is-v2',
+    'reviews-slider',
+    {
+      slidesPerView: 'auto',
+      breakpoints: {
+        0: {
+          spaceBetween: 16,
+        },
+        767: {
+          spaceBetween: 24,
+        },
+        992: {
+          spaceBetween: 40,
+        },
+      },
     },
     'all',
   ],
