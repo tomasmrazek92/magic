@@ -162,6 +162,7 @@ const swiperInstances = [
     'products-slider',
     {
       slidesPerView: 'auto',
+      slideToClickedSlide: true,
       breakpoints: {
         0: {
           spaceBetween: 16,
