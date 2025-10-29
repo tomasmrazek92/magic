@@ -148,6 +148,10 @@ const swiperInstances = [
     'hp_hero-slider',
     {
       slidesPerView: 'auto',
+      autoplay: {
+        delay: 4000,
+        disableOnInteraction: false,
+      },
       threshold: 20,
     },
     'all',
@@ -167,6 +171,44 @@ const swiperInstances = [
         },
         992: {
           spaceBetween: 32,
+        },
+      },
+      on: {
+        init: function () {
+          const firstSlide = this.slides[0];
+          const firstVideo = $(firstSlide).find('video')[0];
+          if (firstVideo) {
+            firstVideo.load();
+
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    firstVideo.play();
+                    observer.disconnect();
+                  }
+                });
+              },
+              { threshold: 0.5 }
+            );
+
+            observer.observe(firstVideo);
+          }
+        },
+        transitionStart: function () {
+          $(this.el)
+            .find('video')
+            .each(function () {
+              this.currentTime = 0;
+              this.pause();
+            });
+        },
+        transitionEnd: function () {
+          const activeSlide = this.slides[this.activeIndex];
+          const activeVideo = $(activeSlide).find('video')[0];
+          if (activeVideo) {
+            activeVideo.play();
+          }
         },
       },
     },
@@ -217,9 +259,14 @@ $(document).ready(function () {
         },
         480: {
           slidesPerView: 'auto',
+          centeredSlides: true,
           allowTouchMove: false,
           allowSlideNext: false,
           allowSlidePrev: false,
+        },
+        992: {
+          centeredSlides: false,
+          slidesPerView: 'auto',
         },
       },
       on: {
@@ -313,7 +360,7 @@ $(document).ready(function () {
     customerSwiper.updateSlidesClasses();
     customerSwiper.slideTo(index, 600);
     customerSwiper.update();
-    if (window.innerWidth >= 480) {
+    if (window.innerWidth >= 992) {
       customerSwiper.allowSlideNext = false;
       customerSwiper.allowSlidePrev = false;
     }
@@ -327,7 +374,7 @@ $(document).ready(function () {
     $('.swiper_testimonials-card.is-v2').removeClass('is-active');
     $('.swiper_testimonials-card.is-v2').eq(index).addClass('is-active');
 
-    if (window.innerWidth >= 480) {
+    if (window.innerWidth >= 992) {
       setTimeout(() => {
         forceRecalculateSwiper(index);
       }, 500);

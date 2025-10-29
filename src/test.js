@@ -1,203 +1,180 @@
-/**
- * List.js Search (Once)
- */
-
-function initListSearch() {
-  const searchModal = document.querySelector('.dash-search__modal');
-  const searchInput = document.querySelector('.dash-search-field__input');
-  const notFoundMessage = document.querySelector('.dash-search__not-found');
-  const searchResultValue = document.querySelector('#search-result-input-value');
-  const body = document.querySelector('body');
-
-  const resourcesIcon =
-    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M21 16V8c0-.7-.4-1.4-1-1.7L13 2.2c-.6-.4-1.4-.4-2 0L4 6.2C3.4 6.6 3 7.2 3 8v8c0 .7.4 1.4 1 1.8l7 4c.6.4 1.4.4 2 0l7-4c.6-.4 1-.9 1-1.8Z" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22.1V12" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12l8.7-5" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.3 7l8.7 5" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-  const downloadIcon =
-    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17V3" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 21H4" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 12L12 17L7 12" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-  // Initialize List.js for resources
-  const optionsResources = {
-    valueNames: ['sr__title', { name: 'sr__click', attr: 'href' }, 'sr__type', 'sr__keywords'],
-    item: `<li class="sr__li"><a class="sr__click" href=""><div class="sr__start"><div class="sr__icon">${resourcesIcon}</div><p class="sr__title"></p></div><div class="sr__end"></div></a></li>`,
-    listClass: 'dash-search__results-list-resources',
-    fuzzySearch: {
-      searchClass: 'dash-search-field__input',
-      location: 0,
-      distance: 100,
-      threshold: 0.3,
-      multiSearch: true,
+'use strict';
+(() => {
+  var t,
+    e,
+    r = 'fs-attributes',
+    s = 'autovideo',
+    i = 'cmsattribute',
+    n = async (...t) => {
+      var e;
+      let r = [];
+      for (let s of t) {
+        let i = await (null == (e = window.fsAttributes[s]) ? void 0 : e.loading);
+        r.push(i);
+      }
+      return r;
     },
-  };
-
-  const valuesResourcesElements = document.querySelectorAll(
-    '[data-sm-list="resources"] [sm-resource-slug]'
-  );
-  const valuesResources = Array.from(valuesResourcesElements)
-    .filter(
-      (element) =>
-        (element.hasAttribute('sm-type-vault') &&
-          element.getAttribute('sm-type-vault') === 'true') ||
-        (element.hasAttribute('sm-type-video') &&
-          element.getAttribute('sm-type-video') === 'true') ||
-        (element.hasAttribute('sm-type-basics') &&
-          element.getAttribute('sm-type-basics') === 'true')
-    )
-    .map((element) => ({
-      sr__title: element.getAttribute('sm-resource-title'),
-      sr__click: element.querySelector('a').getAttribute('href'),
-      sr__type: element.getAttribute('data-resource-type'),
-      sr__keywords: element.getAttribute('sm-resource-keywords'),
-    }));
-  const listResources = new List('list-resources', optionsResources, valuesResources);
-
-  // Initialize List.js for icons
-  const optionsIcons = {
-    valueNames: ['sr__title', { name: 'sr__click', attr: 'data-svg' }, 'sr__keywords', 'sr__icon'],
-    item: `<li class="sr__li"><div class="sr__click" data-svg=""><div class="sr__start"><div class="sr__icon" data-svg-src></div><p class="sr__title"></p></div><div class="sr__end"><div class="dash-command" data-svg-copy><span class="dash-command__text">Copy</span></div><div class="dash-command is--download" data-svg-download>${downloadIcon}</div></div></div></li>`,
-    listClass: 'dash-search__results-list-icons',
-    fuzzySearch: {
-      searchClass: 'dash-search-field__input',
-      location: 0,
-      distance: 100,
-      threshold: 0.3,
-      multiSearch: true,
+    l = () => {};
+  function u(t, e, r, s) {
+    return t ? (t.addEventListener(e, r, s), () => t.removeEventListener(e, r, s)) : l;
+  }
+  function o(t, e, r) {
+    var s;
+    let i = window.fsAttributes[t];
+    return (i.destroy = r || l), null == (s = i.resolve) || s.call(i, e), e;
+  }
+  var a = `${r}-support`,
+    c = 'https://cdn.jsdelivr.net/npm/@finsweet/attributes-support@1/support.js',
+    d = async () => {
+      let { fsAttributes: t, location: e } = window,
+        { host: r, searchParams: s } = new URL(e.href);
+      t.support || (t.support = {});
+      let { support: i } = t;
+      if (!r.includes('webflow.io') || !s.has(a)) return !1;
+      if (i.import) return i.import;
+      try {
+        i.import = new Promise((t, e) => {
+          let r = document.createElement('script');
+          (r.src = c), (r.onload = () => t(!0)), (r.onerror = e), document.head.append(r);
+        });
+      } catch (n) {
+        return !1;
+      }
+      return i.import;
     },
-  };
-
-  // const valuesIconsElements = document.querySelectorAll('[data-sm-list="icons"] [sm-icon-slug]');
-  const valuesIconsElements = document.querySelectorAll('[data-sm-list="icons"] [sm-icon-slugX]');
-  const valuesIcons = Array.from(valuesIconsElements).map((element) => ({
-    sr__title: element.getAttribute('sm-icon-title'),
-    sr__click: element.getAttribute('sm-icon-slug'),
-    sr__keywords: element.getAttribute('sm-icon-keywords'),
-    sr__icon: element.getAttribute('sm-icon-svg'),
-  }));
-  const listIcons = new List('list-icons', optionsIcons, valuesIcons);
-
-  let highlightedIndex = -1; // Track the currently highlighted item's index
-
-  // Add an event listener for the search input
-  searchInput.addEventListener('input', function () {
-    const query = searchInput.value.trim();
-
-    // Remove previous highlight (if active)
-    if (body.getAttribute('data-dash-search') === 'active') {
-      removeHighlight();
-      highlightedIndex = -1; // Reset highlight index
-    }
-
-    // Update the search result value
-    searchResultValue.textContent = query;
-
-    if (query === '') {
-      // If the input is empty, clear both lists and hide the not-found message
-      listResources.search('not-match-anything-unique-99', ['name']);
-      listIcons.search('not-match-anything-unique-99', ['name']);
-      notFoundMessage.style.display = 'none'; // Hide not-found message
-      searchModal.setAttribute('data-search-scroll-status', 'not-active'); // Input is empty
-      return;
-    }
-
-    searchModal.setAttribute('data-search-scroll-status', 'active'); // Input has text
-
-    // Perform search on both lists
-    listResources.fuzzySearch(query);
-    listIcons.fuzzySearch(query);
-
-    // Limit Icons list to 10 results
-    if (listIcons.matchingItems.length > 10) {
-      listIcons.show(1, 10); // Show only the first 10 items
-    }
-
-    // Display or hide the "not-found" message
-    const resourcesMatches = listResources.matchingItems.length;
-    const iconsMatches = listIcons.matchingItems.length;
-
-    if (resourcesMatches === 0 && iconsMatches === 0) {
-      notFoundMessage.style.display = 'block'; // Show not-found message
-    } else {
-      notFoundMessage.style.display = 'none'; // Hide not-found message
-
-      // Highlight the first result if active
-      if (body.getAttribute('data-dash-search') === 'active') {
-        const firstResult = document.querySelector(
-          '.dash-search__results-list-resources .sr__li a, .dash-search__results-list-icons .sr__li a'
-        );
-        if (firstResult) {
-          highlightItem(firstResult);
-          highlightedIndex = 0; // Set the first result as the highlighted index
+    f = (t) => {
+      let e = (e, r, s) => {
+        let { key: i, values: n } = t[e],
+          l;
+        if (!r) return `[${i}]`;
+        let u = null == n ? void 0 : n[r];
+        l = 'string' == typeof u ? u : u(s && 'instanceIndex' in s ? s.instanceIndex : void 0);
+        let o = s && 'caseInsensitive' in s && s.caseInsensitive ? 'i' : '';
+        if (!(null != s && s.operator)) return `[${i}="${l}"${o}]`;
+        switch (s.operator) {
+          case 'prefixed':
+            return `[${i}^="${l}"${o}]`;
+          case 'suffixed':
+            return `[${i}$="${l}"${o}]`;
+          case 'contains':
+            return `[${i}*="${l}"${o}]`;
         }
+      };
+      function r(t, r) {
+        let s = e('element', t, r),
+          i = (null == r ? void 0 : r.scope) || document;
+        return null != r && r.all ? [...i.querySelectorAll(s)] : i.querySelector(s);
       }
-    }
-  });
-
-  // Arrow key navigation
-  document.addEventListener('keydown', (event) => {
-    if (body.getAttribute('data-dash-search') !== 'active') return;
-
-    const results = document.querySelectorAll(
-      '.dash-search__results-list-resources .sr__li a, .dash-search__results-list-icons .sr__li a'
-    );
-
-    if (results.length === 0) return;
-
-    if (event.key === 'ArrowDown') {
-      // Move highlight down
-      event.preventDefault();
-      highlightedIndex = (highlightedIndex + 1) % results.length;
-      highlightItem(results[highlightedIndex]);
-    } else if (event.key === 'ArrowUp') {
-      // Move highlight up
-      event.preventDefault();
-      highlightedIndex = (highlightedIndex - 1 + results.length) % results.length;
-      highlightItem(results[highlightedIndex]);
-    }
-  });
-
-  // Highlight an item visually without taking focus
-  function highlightItem(item) {
-    removeHighlight(); // Ensure only one item is highlighted
-    item.classList.add('is--highlight'); // Add highlight class for visual indication
-    item.scrollIntoView({ block: 'nearest' }); // Ensure the highlighted item is visible
-  }
-
-  // Remove the highlight class from all items
-  function removeHighlight() {
-    const highlighted = document.querySelector('.is--highlight');
-    if (highlighted) {
-      highlighted.classList.remove('is--highlight');
-    }
-  }
-
-  // Reset function for search
-  window.resetSearch = function () {
-    body.setAttribute('data-dash-search', 'not-active');
-
-    setTimeout(() => {
-      searchInput.value = ''; // Clear the input field
-      removeHighlight(); // Remove any highlights
-      searchModal.setAttribute('data-search-scroll-status', 'not-active'); // Hide the search modal
-      notFoundMessage.style.display = 'none'; // Hide not-found message
-      searchInput.blur(); // Blur the search input
-
-      // Clear search results
-      listResources.search('not-match-anything-unique-99', ['title']);
-      listIcons.search('not-match-anything-unique-99', ['title']);
-    }, 200); // Small delay ensures visibility
-  };
-
-  // Handle "Enter" key press to activate the highlighted link
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && body.getAttribute('data-dash-search') === 'active') {
-      const highlighted = document.querySelector('.is--highlight');
-      if (highlighted) {
-        highlighted.click(); // Simulate click on the highlighted link
-        event.preventDefault(); // Prevent default form submission or focus shift
+      return [e, r];
+    },
+    v = {
+      preventLoad: { key: `${r}-preventload` },
+      debugMode: { key: `${r}-debug` },
+      src: { key: 'src', values: { finsweet: '@finsweet/attributes' } },
+      dev: { key: `${r}-dev` },
+    };
+  [t, e] = f(v);
+  var p,
+    b,
+    y,
+    h = (t) => {
+      let { currentScript: e } = document,
+        r = {};
+      if (!e) return { attributes: r, preventsLoad: !1 };
+      let s = { preventsLoad: 'string' == typeof e.getAttribute(v.preventLoad.key), attributes: r };
+      for (let i in t) {
+        let n = e.getAttribute(t[i]);
+        s.attributes[i] = n;
       }
-    }
+      return s;
+    },
+    A = () => {
+      let t = w();
+      if (window.fsAttributes && !Array.isArray(window.fsAttributes)) {
+        g(window.fsAttributes, t);
+        return;
+      }
+      let e = {
+        cms: {},
+        push(...t) {
+          var e, r;
+          for (let [s, i] of t)
+            null == (r = null == (e = this[s]) ? void 0 : e.loading) || r.then(i);
+        },
+        destroy() {
+          var e, r;
+          for (let s of t)
+            null == (r = null == (e = window.fsAttributes[s]) ? void 0 : e.destroy) || r.call(e);
+        },
+      };
+      g(e, t), m(e), (window.fsAttributes = e), (window.FsAttributes = window.fsAttributes), d();
+    },
+    w = () => {
+      let e = t('src', 'finsweet', { operator: 'contains' }),
+        r = t('dev');
+      return [...document.querySelectorAll(`script${e}, script${r}`)].reduce((t, e) => {
+        var r;
+        let s =
+          e.getAttribute(v.dev.key) ||
+          (null == (r = e.src.match(/[\w-. ]+(?=(\.js)$)/)) ? void 0 : r[0]);
+        return s && !t.includes(s) && t.push(s), t;
+      }, []);
+    },
+    g = (t, e) => {
+      for (let r of e) {
+        if (t[r]) continue;
+        t[r] = {};
+        let s = t[r];
+        s.loading = new Promise((t) => {
+          s.resolve = (e) => {
+            t(e), delete s.resolve;
+          };
+        });
+      }
+    },
+    m = (t) => {
+      let e = Array.isArray(window.fsAttributes) ? window.fsAttributes : [];
+      t.push(...e);
+    };
+  (({ scriptAttributes: t, attributeKey: e, version: r, init: s }) => {
+    var i;
+    A(), (i = window.fsAttributes)[e] || (i[e] = {});
+    let { preventsLoad: n, attributes: l } = h(t),
+      u = window.fsAttributes[e];
+    (u.version = r),
+      (u.init = s),
+      n || (window.Webflow || (window.Webflow = []), window.Webflow.push(() => s(l)));
+  })({
+    async init() {
+      await n(i);
+      let t = document.querySelectorAll('video');
+      if (!t.length) return;
+      let e = new Map(),
+        r = new IntersectionObserver(
+          (t) => {
+            for (let { target: r, isIntersecting: s } of t)
+              r instanceof HTMLVideoElement &&
+                !r.hasAttribute('data-exclude-autovideo') &&
+                !r.closest('[data-exclude-autovideo]') &&
+                (s ? r.play().catch(() => {}) : r.pause(), e.set(r, s));
+          },
+          { threshold: 0.1 }
+        );
+      for (let l of t)
+        l.hasAttribute('data-exclude-autovideo') ||
+          l.closest('[data-exclude-autovideo]') ||
+          ((l.autoplay = !1), (l.playsInline = !0), e.set(l, null), r.observe(l));
+      let a = u(document, 'visibilitychange', () => {
+        for (let [t, r] of e)
+          t.hasAttribute('data-exclude-autovideo') ||
+            t.closest('[data-exclude-autovideo]') ||
+            (document.hidden || !r ? t.pause() : t.play().catch(() => {}));
+      });
+      return o(s, e, () => {
+        r.disconnect(), a();
+      });
+    },
+    version: '1.5.0',
+    attributeKey: s,
   });
-
-  // Clear both lists on page load
-  listResources.search('not-match-anything-unique-99', ['title']);
-  listIcons.search('not-match-anything-unique-99', ['title']);
-}
+})();
