@@ -162,7 +162,9 @@ const swiperInstances = [
     'products-slider',
     {
       slidesPerView: 'auto',
+      centeredSlides: true,
       slideToClickedSlide: true,
+      loop: true,
       breakpoints: {
         0: {
           spaceBetween: 16,
@@ -221,6 +223,8 @@ const swiperInstances = [
     'reviews-slider',
     {
       slidesPerView: 'auto',
+      centeredSlides: true,
+      loop: true,
       breakpoints: {
         0: {
           spaceBetween: 16,
