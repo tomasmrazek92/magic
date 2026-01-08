@@ -239,6 +239,98 @@ const swiperInstances = [
     },
     'all',
   ],
+  [
+    '.section_full-swiper',
+    '.swiper.swiper-full',
+    'full-slider',
+    {
+      slidesPerView: 1,
+      centeredSlides: true,
+      loop: true,
+      spaceBetween: 0,
+      on: {
+        beforeTransitionStart: (swiper) => {
+          $(swiper.el)
+            .find('video')
+            .each(function () {
+              this.pause();
+              this.currentTime = 0;
+            });
+        },
+        slideChangeTransitionEnd: (swiper) => {
+          setTimeout(() => {
+            let $currentSlide = $(swiper.slides[swiper.activeIndex]);
+            $currentSlide.find('video').each(function () {
+              let video = this;
+              if (video.readyState >= 2 && !video.paused) return;
+
+              let playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    if (video.paused) {
+                      video.play().catch(() => {});
+                    }
+                  })
+                  .catch(() => {});
+              }
+            });
+          }, 150);
+        },
+      },
+    },
+    'all',
+  ],
+  [
+    '.section_box-swiper',
+    '.swiper.swiper-box',
+    'is-box-swiper',
+    {
+      slidesPerView: 1,
+      centeredSlides: true,
+      spaceBetween: 32,
+      loop: true,
+      breakpoints: {
+        0: {
+          autoHeight: true,
+        },
+        992: {
+          autoHeight: false,
+        },
+      },
+      on: {
+        beforeTransitionStart: (swiper) => {
+          $(swiper.el)
+            .find('video')
+            .each(function () {
+              this.pause();
+              this.currentTime = 0;
+            });
+        },
+        slideChangeTransitionEnd: (swiper) => {
+          setTimeout(() => {
+            let $currentSlide = $(swiper.slides[swiper.activeIndex]);
+            $currentSlide.find('video').each(function () {
+              let video = this;
+              if (video.readyState >= 2 && !video.paused) return;
+
+              let playPromise = video.play();
+              if (playPromise !== undefined) {
+                playPromise
+                  .then(() => {
+                    if (video.paused) {
+                      video.play().catch(() => {});
+                    }
+                  })
+                  .catch(() => {});
+              }
+            });
+          }, 150);
+        },
+      },
+    },
+    'all',
+  ],
 ];
 
 $(document).ready(function () {
