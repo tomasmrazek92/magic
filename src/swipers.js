@@ -178,7 +178,7 @@ const swiperInstances = [
       },
       on: {
         init: function () {
-          const firstSlide = this.slides[0];
+          const firstSlide = this.slides[this.activeIndex];
           const firstVideo = $(firstSlide).find('video')[0];
           if (firstVideo) {
             firstVideo.load();
@@ -283,49 +283,122 @@ const swiperInstances = [
   ],
   [
     '.section_box-swiper',
-    '.swiper.swiper-box',
+    '.slider.is-box-swiper',
     'is-box-swiper',
     {
-      slidesPerView: 1,
+      slidesPerView: 'auto',
       centeredSlides: true,
-      spaceBetween: 32,
       loop: true,
       breakpoints: {
         0: {
           autoHeight: true,
+          spaceBetween: 16,
         },
         992: {
           autoHeight: false,
+          spaceBetween: 64,
         },
       },
       on: {
         beforeTransitionStart: (swiper) => {
-          $(swiper.el)
-            .find('video')
-            .each(function () {
-              this.pause();
-              this.currentTime = 0;
-            });
+          $(swiper.slides).each(function (index) {
+            if (index !== swiper.activeIndex) {
+              $(this)
+                .find('video')
+                .each(function () {
+                  this.pause();
+                  this.currentTime = 0;
+                });
+            }
+          });
         },
+
+        init: function () {
+          const firstSlide = this.slides[this.activeIndex];
+          const firstVideo = $(firstSlide).find('video')[0];
+          if (firstVideo) {
+            firstVideo.load();
+
+            const observer = new IntersectionObserver(
+              (entries) => {
+                entries.forEach((entry) => {
+                  if (entry.isIntersecting) {
+                    let playPromise = firstVideo.play();
+                    if (playPromise !== undefined) {
+                      playPromise
+                        .then(() => {
+                          observer.disconnect();
+                        })
+                        .catch(() => {
+                          observer.disconnect();
+                        });
+                    } else {
+                      observer.disconnect();
+                    }
+                  }
+                });
+              },
+              { threshold: 0.5 }
+            );
+
+            observer.observe(firstVideo);
+          }
+        },
+
         slideChangeTransitionEnd: (swiper) => {
+          let activeIndex = swiper.activeIndex;
+
+          $(swiper.slides).each(function (index) {
+            if (index !== activeIndex) {
+              $(this)
+                .find('video')
+                .each(function () {
+                  this.pause();
+                  this.currentTime = 0;
+                });
+            }
+          });
+
           setTimeout(() => {
-            let $currentSlide = $(swiper.slides[swiper.activeIndex]);
+            if (swiper.activeIndex !== activeIndex) return;
+
+            let $currentSlide = $(swiper.slides[activeIndex]);
+
             $currentSlide.find('video').each(function () {
               let video = this;
-              if (video.readyState >= 2 && !video.paused) return;
+              let playAttempts = 0;
+              let maxAttempts = 20;
 
-              let playPromise = video.play();
-              if (playPromise !== undefined) {
-                playPromise
-                  .then(() => {
-                    if (video.paused) {
-                      video.play().catch(() => {});
-                    }
-                  })
-                  .catch(() => {});
-              }
+              video.currentTime = 0;
+
+              let ensurePlaying = () => {
+                if (playAttempts >= maxAttempts) return;
+                if (swiper.activeIndex !== activeIndex) return;
+                playAttempts++;
+
+                if (!video.paused) return;
+
+                let playPromise = video.play();
+                if (playPromise !== undefined) {
+                  playPromise
+                    .then(() => {
+                      setTimeout(() => {
+                        if (swiper.activeIndex === activeIndex && video.paused) {
+                          ensurePlaying();
+                        }
+                      }, 100);
+                    })
+                    .catch(() => {
+                      setTimeout(ensurePlaying, 150);
+                    });
+                } else {
+                  setTimeout(ensurePlaying, 150);
+                }
+              };
+
+              ensurePlaying();
             });
-          }, 150);
+          }, 50);
         },
       },
     },
