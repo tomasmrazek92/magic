@@ -100,7 +100,9 @@ const getMergedSwiperOptions = (options, uniqueKey) => {
       forceToAxis: true,
       thresholdDelta: 25,
     },
+    threshold: 20,
     pagination: paginationConfig,
+    slideToClickedSlide: true,
     ...options,
     on: enhancedEvents, // Override the 'on' property after spreading options
   };
