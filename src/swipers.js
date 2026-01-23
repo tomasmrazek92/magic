@@ -312,12 +312,46 @@ const swiperInstances = [
             }
           });
         },
-
         init: function () {
+          const swiper = this;
           const firstSlide = this.slides[this.activeIndex];
           const firstVideo = $(firstSlide).find('video')[0];
+
+          const loadVideoSources = (video) => {
+            $(video)
+              .find('source[data-src]')
+              .each(function () {
+                this.src = this.getAttribute('data-src');
+                this.removeAttribute('data-src');
+              });
+            video.load();
+          };
+
+          const preloadVideos = () => {
+            const preloadedSources = new Set();
+
+            $(swiper.slides).each(function (index) {
+              if (index !== swiper.activeIndex) {
+                $(this)
+                  .find('video')
+                  .each(function () {
+                    const $sources = $(this).find('source[data-src]');
+
+                    if ($sources.length > 0) {
+                      const firstDataSrc = $sources.first().attr('data-src');
+
+                      if (firstDataSrc && !preloadedSources.has(firstDataSrc)) {
+                        preloadedSources.add(firstDataSrc);
+                        loadVideoSources(this);
+                      }
+                    }
+                  });
+              }
+            });
+          };
+
           if (firstVideo) {
-            firstVideo.load();
+            loadVideoSources(firstVideo);
 
             const observer = new IntersectionObserver(
               (entries) => {
@@ -328,12 +362,15 @@ const swiperInstances = [
                       playPromise
                         .then(() => {
                           observer.disconnect();
+                          preloadVideos();
                         })
                         .catch(() => {
                           observer.disconnect();
+                          preloadVideos();
                         });
                     } else {
                       observer.disconnect();
+                      preloadVideos();
                     }
                   }
                 });
@@ -344,7 +381,6 @@ const swiperInstances = [
             observer.observe(firstVideo);
           }
         },
-
         slideChangeTransitionEnd: (swiper) => {
           let activeIndex = swiper.activeIndex;
 
@@ -368,6 +404,15 @@ const swiperInstances = [
               let video = this;
               let playAttempts = 0;
               let maxAttempts = 20;
+
+              const $sources = $(video).find('source[data-src]');
+              if ($sources.length > 0) {
+                $sources.each(function () {
+                  this.src = this.getAttribute('data-src');
+                  this.removeAttribute('data-src');
+                });
+                video.load();
+              }
 
               video.currentTime = 0;
 
