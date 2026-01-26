@@ -13,6 +13,7 @@ const ENTRY_POINTS = [
   'src/plyr-video.js',
   'src/gallery.js',
   'src/index.js',
+  'src/bunny-lightbox.js',
 ];
 
 // Config dev serving
