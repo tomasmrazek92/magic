@@ -83,50 +83,34 @@ $(document).ready(() => {
   function initModalBasic() {
     const modalGroup = document.querySelector('[data-modal-group-status]');
     const modals = document.querySelectorAll('[data-modal-name]');
-    const modalTargets = document.querySelectorAll('[data-modal-target]');
 
-    // Open modal
-    modalTargets.forEach((modalTarget) => {
-      modalTarget.addEventListener('click', function () {
-        const modalTargetName = this.getAttribute('data-modal-target');
+    $(document).on('click', '[data-modal-target]', function () {
+      const modalTargetName = $(this).attr('data-modal-target');
 
-        // Close all modals
-        modalTargets.forEach((target) => target.setAttribute('data-modal-status', 'not-active'));
-        modals.forEach((modal) => modal.setAttribute('data-modal-status', 'not-active'));
+      $('[data-modal-target]').attr('data-modal-status', 'not-active');
+      $('[data-modal-name]').attr('data-modal-status', 'not-active');
 
-        // Activate clicked modal
-        document
-          .querySelector(`[data-modal-target="${modalTargetName}"]`)
-          .setAttribute('data-modal-status', 'active');
-        document
-          .querySelector(`[data-modal-name="${modalTargetName}"]`)
-          .setAttribute('data-modal-status', 'active');
+      $(`[data-modal-target="${modalTargetName}"]`).attr('data-modal-status', 'active');
+      $(`[data-modal-name="${modalTargetName}"]`).attr('data-modal-status', 'active');
 
-        // Set group to active
-        if (modalGroup) {
-          modalGroup.setAttribute('data-modal-group-status', 'active');
-        }
-      });
+      if (modalGroup) {
+        $(modalGroup).attr('data-modal-group-status', 'active');
+      }
     });
 
-    // Close modal
-    document.querySelectorAll('[data-modal-close]').forEach((closeBtn) => {
-      closeBtn.addEventListener('click', closeAllModals);
-    });
+    $(document).on('click', '[data-modal-close]', closeAllModals);
 
-    // Close modal on `Escape` key
-    document.addEventListener('keydown', function (event) {
+    $(document).on('keydown', function (event) {
       if (event.key === 'Escape') {
         closeAllModals();
       }
     });
 
-    // Function to close all modals
     function closeAllModals() {
-      modalTargets.forEach((target) => target.setAttribute('data-modal-status', 'not-active'));
+      $('[data-modal-target]').attr('data-modal-status', 'not-active');
 
       if (modalGroup) {
-        modalGroup.setAttribute('data-modal-group-status', 'not-active');
+        $(modalGroup).attr('data-modal-group-status', 'not-active');
       }
     }
   }
@@ -816,7 +800,7 @@ $(document).ready(() => {
           },
           slideChange: function () {
             if (typeof optibaseSendConversionEvent === 'function') {
-              optibaseSendConversionEvent("slidechangecircle")
+              optibaseSendConversionEvent('slidechangecircle');
             }
             updateMobileItem(this.activeIndex);
           },
@@ -832,34 +816,34 @@ $(document).ready(() => {
 
     return mm;
   }
-  function trackCircleScroll(){
+  function trackCircleScroll() {
     if (typeof window.optibaseActiveVariants === 'undefined') return;
-    
-    $(document).ready(function() {
-        let hasLogged = false;
-        
-        $(window).on('scroll', function() {
-            if (hasLogged) return;
-            
-            const section = $('.section_hp-simplified-wall');
-            if (section.length === 0) return;
-            
-            const sectionBottom = section.offset().top + section.outerHeight();
-            const scrollPosition = $(window).scrollTop() + $(window).height() / 2;
-            
-            if (scrollPosition > sectionBottom) {
-                if (typeof optibaseSendConversionEvent === 'function') {
-                  console.log("Test")
-                    optibaseSendConversionEvent("scrollpastcirclewall");
-                }
-                hasLogged = true;
-            }
-        });
+
+    $(document).ready(function () {
+      let hasLogged = false;
+
+      $(window).on('scroll', function () {
+        if (hasLogged) return;
+
+        const section = $('.section_hp-simplified-wall');
+        if (section.length === 0) return;
+
+        const sectionBottom = section.offset().top + section.outerHeight();
+        const scrollPosition = $(window).scrollTop() + $(window).height() / 2;
+
+        if (scrollPosition > sectionBottom) {
+          if (typeof optibaseSendConversionEvent === 'function') {
+            console.log('Test');
+            optibaseSendConversionEvent('scrollpastcirclewall');
+          }
+          hasLogged = true;
+        }
+      });
     });
-}
+  }
   // Init
   initCircleSroll();
-  trackCircleScroll()
+  trackCircleScroll();
   // #endregion
 
   // #region draggable
@@ -870,42 +854,42 @@ $(document).ready(() => {
     if (!splitters) return;
 
     const setupSplitter = (splitter) => {
-        const handle = splitter.querySelector('[data-splitter="handle"]');
-        const after = splitter.querySelector('[data-splitter="after"]');
+      const handle = splitter.querySelector('[data-splitter="handle"]');
+      const after = splitter.querySelector('[data-splitter="after"]');
 
-        let bounds = splitter.getBoundingClientRect();
-        let currentPercent = parseFloat(splitter.getAttribute('data-splitter-initial')) || 50;
+      let bounds = splitter.getBoundingClientRect();
+      let currentPercent = parseFloat(splitter.getAttribute('data-splitter-initial')) || 50;
 
-        const setPositions = (percent) => {
-            bounds = splitter.getBoundingClientRect();
-            const positionX = (percent / 100) * bounds.width;
-            gsap.set(handle, { x: positionX, left: 'unset' });
-            gsap.set(after, { clipPath: `inset(0 0 0 ${percent}%)` });
-        };
+      const setPositions = (percent) => {
+        bounds = splitter.getBoundingClientRect();
+        const positionX = (percent / 100) * bounds.width;
+        gsap.set(handle, { x: positionX, left: 'unset' });
+        gsap.set(after, { clipPath: `inset(0 0 0 ${percent}%)` });
+      };
 
-        setPositions(currentPercent);
+      setPositions(currentPercent);
 
-        Draggable.create(handle, {
-            type: 'x',
-            bounds: splitter,
-            cursor: 'ew-resize',
-            activeCursor: 'grabbing',
-            onDrag() {
-                currentPercent = (this.x / bounds.width) * 100;
-                gsap.set(after, { clipPath: `inset(0 0 0 ${currentPercent}%)` });
-            },
-            onDragEnd() {
-                if (typeof optibaseSendConversionEvent === 'function') {
-                    optibaseSendConversionEvent("beforeaftermoved");
-                }
-            }
-        });
+      Draggable.create(handle, {
+        type: 'x',
+        bounds: splitter,
+        cursor: 'ew-resize',
+        activeCursor: 'grabbing',
+        onDrag() {
+          currentPercent = (this.x / bounds.width) * 100;
+          gsap.set(after, { clipPath: `inset(0 0 0 ${currentPercent}%)` });
+        },
+        onDragEnd() {
+          if (typeof optibaseSendConversionEvent === 'function') {
+            optibaseSendConversionEvent('beforeaftermoved');
+          }
+        },
+      });
 
-        window.addEventListener('resize', () => setPositions(currentPercent));
+      window.addEventListener('resize', () => setPositions(currentPercent));
     };
 
     splitters.forEach(setupSplitter);
-}
+  }
 
   // Init
   initBeforeAfterSplitSlider();
