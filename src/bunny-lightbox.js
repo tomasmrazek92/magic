@@ -815,7 +815,5 @@ function setupCDNPreconnect() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-  setupCDNPreconnect();
-  initBunnyLightboxPlayer();
-});
+setupCDNPreconnect();
+initBunnyLightboxPlayer();
